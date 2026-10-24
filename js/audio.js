@@ -75,6 +75,12 @@ function noiseBurst(t, dur, vol, freq = 400) {
 
 // Liefert die Länge in Sekunden und trägt die Knoten zum Abbrechen ein
 const BELLS = {
+  dong: (t) => { // Turnier-Gong: tiefer, voller "Dong" wie am Mattenrand bei internationalen Turnieren
+    scheduled.push(noiseBurst(t, 0.12, 0.35, 900));
+    [[1, 1, 3.4], [2.0, 0.7, 2.8], [2.76, 0.5, 2.2], [4.07, 0.35, 1.5], [5.4, 0.2, 1.0]].forEach(([r, a, d]) => scheduled.push(partial(t, 196 * r, 0.5 * a, d, 'sine', 0.2)));
+    scheduled.push(partial(t, 98, 0.45, 2.4, 'sine', 0.1)); // tiefer Körper des Klangs
+    return 3.4;
+  },
   temple: (t) => { // japanische Tempelglocke (Rin): unharmonische Teiltöne, langer Ausklang
     [[1, 1, 3.6], [2.76, 0.5, 2.6], [5.4, 0.28, 1.8], [8.9, 0.14, 1.1]].forEach(([r, a, d]) => scheduled.push(partial(t, 520 * r, 0.34 * a, d)));
     return 3.6;
@@ -146,9 +152,9 @@ function playTransition(t, from, to) {
   const order = S.endOrder;
   const isEnd = to === 'finish';
   if (to === 'work') {
-    // Beginn einer Belastung: kurzer Ton, dann Kommando
-    beep(t, 1175, 0.1, 0.3);
-    voice(t + 0.14, from === 'work' ? 'switch' : 'start');
+    // Beginn einer Belastung: langer, höherer Startton (nach 3-2-1), dann das Kommando (Hajime)
+    beep(t, 1320, 0.55, 0.36);
+    voice(t + 0.1, from === 'work' ? 'switch' : 'start');
     return;
   }
   if (from === 'work' || isEnd || to === 'cooldown') {
@@ -188,7 +194,7 @@ export function schedule(cues) {
   for (const c of cues) {
     const t = base + c.in / 1000;
     if (c.kind === 'countdown') {
-      if (S.countdown && S.countdownList.includes(c.sec)) beep(t, c.sec === 1 ? 1175 : 880);
+      if (S.countdown && S.countdownList.includes(c.sec)) beep(t, 880, 0.14, 0.34);
     } else if (c.kind === 'phase') {
       playTransition(t, c.from, c.phaseType);
     } else if (c.kind === 'finish') {

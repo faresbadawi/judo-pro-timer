@@ -330,7 +330,7 @@ export function settingsView() {
       row(t('set.volume'), h('input', { type: 'range', class: 'vol', min: 0.2, max: 1, step: 0.05, value: S.volume, 'aria-label': t('set.volume'),
         oninput: (e) => { store.settings().volume = +e.target.value; }, onchange: (e) => { set({ volume: +e.target.value }); audio.unlock(); audio.previewBell(); } })),
       row(t('set.voice'), sel(S.voiceStyle, [['jp', t('set.voiceJp')], ['app', t('set.voiceApp')], ['off', t('set.voiceOff')]], (v) => { set({ voiceStyle: v }); audio.previewVoice(); }, t('set.voice')), t('set.voiceHint')),
-      row(t('set.bell'), sel(S.bell, [['temple', t('set.bellTemple')], ['gong', t('set.bellGong')], ['buzzer', t('set.bellBuzzer')], ['none', t('set.bellNone')]], (v) => { set({ bell: v }); audio.previewBell(); }, t('set.bell'))),
+      row(t('set.bell'), sel(S.bell, [['dong', t('set.bellDong')], ['temple', t('set.bellTemple')], ['gong', t('set.bellGong')], ['buzzer', t('set.bellBuzzer')], ['none', t('set.bellNone')]], (v) => { set({ bell: v }); audio.previewBell(); }, t('set.bell'))),
       row(t('set.endOrder'), sel(S.endOrder, [['bell-voice', t('set.orderBellVoice')], ['voice-bell', t('set.orderVoiceBell')], ['bell', t('set.orderBell')], ['voice', t('set.orderVoice')]], (v) => set({ endOrder: v }), t('set.endOrder')), t('set.endOrderHint')),
       row(t('set.countdown'), toggle(S.countdown, (v) => set({ countdown: v }), t('set.countdown')), t('set.countdownHint')),
       S.countdown ? h('div', { class: 'chips' }, [10, 5, 3, 2, 1].map((n) =>

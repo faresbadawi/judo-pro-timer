@@ -56,6 +56,7 @@ export default {
   'set.title': 'الإعدادات', 'set.sound': 'الصوت', 'set.soundOn': 'الصوت', 'set.volume': 'مستوى الصوت',
   'set.voice': 'الإرشادات الصوتية', 'set.voiceJp': 'أوامر الجودو (ياباني)', 'set.voiceApp': 'لغة التطبيق', 'set.voiceOff': 'بدون',
   'set.voiceHint': 'هاجيمي، ماتيه، ياسومي، سوري ماديه – أو إرشادات قصيرة بالعربية',
+  'set.bellDong': 'غونغ البطولات',
   'set.bell': 'الجرس', 'set.bellTemple': 'جرس المعبد', 'set.bellGong': 'غونغ', 'set.bellBuzzer': 'صفّارة', 'set.bellNone': 'بدون',
   'set.endOrder': 'نهاية المرحلة', 'set.endOrderHint': 'ترتيب الجرس والإعلان الصوتي',
   'set.orderBellVoice': 'الجرس ثم الإعلان', 'set.orderVoiceBell': 'الإعلان ثم الجرس', 'set.orderBell': 'الجرس فقط', 'set.orderVoice': 'الإعلان فقط',

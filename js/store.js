@@ -10,12 +10,13 @@ export const DEFAULT_SETTINGS = {
   sound: true,
   volume: 0.85,
   voiceStyle: 'jp',        // 'jp' Judo-Kommandos | 'app' Sprache der App | 'off'
-  bell: 'temple',          // 'temple' | 'gong' | 'buzzer' | 'none'
+  bell: 'dong',            // 'dong' (Turnier-Gong) | 'temple' | 'gong' | 'buzzer' | 'none'
   endOrder: 'bell-voice',  // 'bell-voice' | 'voice-bell' | 'bell' | 'voice'
   countdown: true,
   countdownList: [10, 5, 3, 2, 1],
   vibrate: true,
-  keepAwake: true
+  keepAwake: true,
+  v2: true
 };
 
 export const newId = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
@@ -49,6 +50,8 @@ export function init() {
     history: s.history || [],
     session: null // laufende Sitzung als Notfall-Sicherung (siehe saveSession)
   };
+  // Frühe Version: Standard war die Tempelglocke; neuer Standard ist der Turnier-Gong
+  if (s.settings && !s.settings.v2) { if (state.settings.bell === 'temple') state.settings.bell = 'dong'; state.settings.v2 = true; save(); }
   if (!s.items) save();
 }
 

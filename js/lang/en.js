@@ -54,6 +54,7 @@ export default {
   'set.title': 'Settings', 'set.sound': 'Sound', 'set.soundOn': 'Sound', 'set.volume': 'Volume',
   'set.voice': 'Voice prompts', 'set.voiceJp': 'Judo commands (Japanese)', 'set.voiceApp': 'App language', 'set.voiceOff': 'None',
   'set.voiceHint': 'Hajime, Mate, Yasume, Sore-made – or short prompts in English',
+  'set.bellDong': 'Tournament gong',
   'set.bell': 'Bell', 'set.bellTemple': 'Temple bell', 'set.bellGong': 'Gong', 'set.bellBuzzer': 'Buzzer', 'set.bellNone': 'None',
   'set.endOrder': 'End of a section', 'set.endOrderHint': 'Order of bell and voice',
   'set.orderBellVoice': 'Bell, then voice', 'set.orderVoiceBell': 'Voice, then bell', 'set.orderBell': 'Bell only', 'set.orderVoice': 'Voice only',

@@ -54,6 +54,7 @@ export default {
   'set.title': 'Optionen', 'set.sound': 'Ton', 'set.soundOn': 'Ton', 'set.volume': 'Lautstärke',
   'set.voice': 'Ansagen', 'set.voiceJp': 'Judo-Kommandos (Japanisch)', 'set.voiceApp': 'Sprache der App', 'set.voiceOff': 'Keine',
   'set.voiceHint': 'Hajime, Mate, Yasume, Sore-made – oder kurze Ansagen auf Deutsch',
+  'set.bellDong': 'Turnier-Gong',
   'set.bell': 'Glocke', 'set.bellTemple': 'Tempelglocke', 'set.bellGong': 'Gong', 'set.bellBuzzer': 'Summer', 'set.bellNone': 'Keine',
   'set.endOrder': 'Ende eines Abschnitts', 'set.endOrderHint': 'Reihenfolge von Glocke und Ansage',
   'set.orderBellVoice': 'Glocke, dann Ansage', 'set.orderVoiceBell': 'Ansage, dann Glocke', 'set.orderBell': 'Nur Glocke', 'set.orderVoice': 'Nur Ansage',

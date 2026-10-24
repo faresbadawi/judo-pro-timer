@@ -15,7 +15,7 @@ Trainer-Timer für den Judo-Alltag als Web-App (PWA): läuft im Browser, lässt 
 
 **Lauf-Bildschirm** (beide Modi): riesige Uhr, Abschnittsname, Schritt/Runde/Set, vier Zeiten – *Gesamt verbleibend*, *aktive Zeit*, *pausiert* und *geplant* –, Pause/Weiter, Vor/Zurück, ±10 s, +30 s Pause einfügen, Vollbild, Querformat-Layout für die Matte. Antippen der Uhr pausiert. Der Timer läuft weiter, wenn man zur Übersicht wechselt.
 
-**Töne:** Tempelglocke, Gong oder Summer; Countdown-Pieptöne (10, 5, 3, 2, 1 s einstellbar); Ansagen als natürliche Stimme: japanische Judo-Kommandos (*Hajime, Mate, Yasume, Sore-made*) oder die Sprache der App (Deutsch, Englisch, Arabisch). Reihenfolge von Glocke und Ansage am Ende eines Abschnitts einstellbar.
+**Töne:** Countdown „3 · 2 · 1“ mit gleichen Pieptönen, dann ein langer, höherer Startton plus *Hajime*; am Ende der **Turnier-Gong** („Dong“, Standard), alternativ Tempelglocke, Gong oder Summer; Countdown-Pieptöne (10, 5, 3, 2, 1 s einstellbar); Ansagen als natürliche Stimme: japanische Judo-Kommandos (*Hajime, Mate, Yasume, Sore-made*) oder die Sprache der App (Deutsch, Englisch, Arabisch). Reihenfolge von Glocke und Ansage am Ende eines Abschnitts einstellbar.
 
 **Sonst:** Verlauf (geplante und tatsächliche Zeit), Sicherung/Import aller Programme, Hell/Dunkel, Rot oder Gold als Akzent, Sprachen Deutsch · English · العربية (Arabisch von rechts nach links), Bildschirm bleibt an (Wake Lock).
 
