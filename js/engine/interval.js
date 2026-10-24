@@ -190,7 +190,7 @@ export class IntervalRunner {
       const ph = this.phases[k];
       if (ph.open) break; // ab hier entscheidet der Trainer
       const phaseMs = ph.dur * 1000;
-      for (const s of this.countdown) {
+      for (const s of ph.quiet ? [] : this.countdown) {
         if (phaseMs > s * 1000 && rem > s * 1000) cues.push({ in: t + rem - s * 1000, kind: 'countdown', sec: s, phase: ph.type });
       }
       const next = this.phases[k + 1];

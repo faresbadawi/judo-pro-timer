@@ -1,9 +1,10 @@
 // Judo-Programme: frei zusammengestellte Abläufe aus Schritten (Name, Dauer, Pause danach).
 // Beispiel: 5:00 Randori, 1:00 Uchi-komi, 0:30 Pause – oder 3:00 / 3:00 / 2:00 mit eigenen Namen.
 // Ein Schritt kann "offen" sein (ohne Zeitlimit): die Uhr zählt aufwärts, der Trainer beendet ihn per Tipp.
+// Ein Schritt kann "ruhig" sein (z. B. Ippon Change über 20 Minuten): nur Hajime am Anfang und ein Signal am Ende, keine Countdown-Töne.
 export const DEFAULT_PROGRAM = {
   name: '',
-  steps: [{ name: 'Randori', dur: 240, open: false, pause: 30 }],
+  steps: [{ name: 'Randori', dur: 240, open: false, pause: 30, quiet: false }],
   repeat: 1,          // Wiederholungen des ganzen Programms
   repeatPause: 0,     // zusätzliche Pause zwischen den Wiederholungen
   warmup: 0,
@@ -13,7 +14,7 @@ export const DEFAULT_PROGRAM = {
 
 export function mergeProgram(p = {}) {
   const steps = (p.steps && p.steps.length ? p.steps : DEFAULT_PROGRAM.steps)
-    .map((s) => ({ name: s.name ?? '', dur: Math.max(0, Number(s.dur) || 0), open: !!s.open, pause: Math.max(0, Number(s.pause) || 0) }));
+    .map((s) => ({ name: s.name ?? '', dur: Math.max(0, Number(s.dur) || 0), open: !!s.open, quiet: !!s.quiet, pause: Math.max(0, Number(s.pause) || 0) }));
   return { ...DEFAULT_PROGRAM, ...p, steps, countdown: p.countdown ? [...p.countdown] : [...DEFAULT_PROGRAM.countdown] };
 }
 
@@ -34,7 +35,7 @@ export function programPhases(input) {
   if (p.warmup > 0) phases.push({ type: 'warmup', dur: p.warmup, label: '', step: -1, steps: n, round: 0, rounds: p.repeat });
   for (let r = 1; r <= p.repeat; r++) {
     p.steps.forEach((s, i) => {
-      phases.push({ type: 'work', dur: s.open ? 0 : s.dur, open: s.open, label: s.name, step: i, steps: n, round: r, rounds: p.repeat });
+      phases.push({ type: 'work', dur: s.open ? 0 : s.dur, open: s.open, quiet: s.quiet, label: s.name, step: i, steps: n, round: r, rounds: p.repeat });
       const lastStep = i === n - 1; const lastRepeat = r === p.repeat;
       if (lastStep && lastRepeat) return;
       const next = lastStep ? p.steps[0] : p.steps[i + 1];

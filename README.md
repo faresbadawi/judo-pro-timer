@@ -7,6 +7,7 @@ Trainer-Timer für den Judo-Alltag als Web-App (PWA): läuft im Browser, lässt 
 **1. Judo-Programme** – frei zusammenstellbare Abläufe aus Schritten:
 - Jeder Schritt hat einen **Namen**, eine **Dauer** und eine **Pause danach** (z. B. 5:00 Randori, 1:00 Uchi-komi, 0:30 Pause oder 3:00 / 3:00 / 2:00).
 - **Open**-Schritte ohne Zeitlimit: die Uhr zählt aufwärts, der Trainer schaltet per Tipp weiter.
+- **Ruhig**-Schritte (z. B. **Ippon Change** über 20 oder 30 Minuten): nur *Hajime* am Anfang und *Mate/Sore-made* am Ende, keine Countdown-Töne dazwischen.
 - Das ganze Programm kann mehrfach wiederholt werden (mit eigener Pause dazwischen), dazu optional Aufwärmen und Abwärmen.
 - Die **Gesamtdauer** wird beim Bearbeiten live berechnet.
 

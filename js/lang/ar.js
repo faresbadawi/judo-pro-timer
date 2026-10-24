@@ -20,10 +20,13 @@ export default {
   'tpl.randori': 'راندوري 4 دقائق × 5', 'tpl.randoriUchi': 'راندوري + أوتشي كومي', 'tpl.threeThreeTwo': '3 · 3 · 2 دقائق',
   'tpl.open': 'راندوري مفتوح', 'tpl.tabata': 'تاباتا 20/10', 'tpl.hiit4020': 'HIIT 40/20', 'tpl.conditioning': 'لياقة بدنية',
 
+  'tpl.ipponChange': 'تبديل الشريك 20 د',
   'pe.new': 'برنامج جديد', 'pe.edit': 'تعديل البرنامج', 'pe.name': 'الاسم', 'pe.namePh': 'مثال: راندوري وأوتشي كومي',
   'pe.steps': 'الخطوات', 'pe.stepName': 'اسم الخطوة', 'pe.duration': 'المدة', 'pe.pause': 'راحة بعدها',
   'pe.openToggle': 'مفتوح (بلا حد زمني)', 'pe.open': 'مفتوح', 'pe.openLong': 'مفتوح – تنهيه بنفسك بضغطة',
   'pe.addStep': 'إضافة خطوة', 'pe.minStep': 'يجب أن تبقى خطوة واحدة على الأقل.',
+  'pe.quietToggle': 'هادئ (هاجيمي والنهاية فقط)',
+  'pe.quietHint': 'لتدريب تبديل الشريك: بلا نغمات عدّ تنازلي',
   'pe.more': 'التسلسل', 'pe.repeat': 'التكرار', 'pe.repeatHint': 'تشغيل البرنامج كاملًا بهذا العدد',
   'pe.repeatPause': 'راحة بين التكرارات', 'pe.warmup': 'الإحماء', 'pe.cooldown': 'التهدئة',
   'pe.total': 'المدة الكلية', 'pe.work': 'منها تدريب',

@@ -236,3 +236,4 @@ dialog.sheet.closing { animation: sheetOut .18s ease-in forwards; }
 
 .run-clock.long { font-size: min(21vw, 18dvh); }
 @media (orientation: landscape) and (min-width: 560px) { .run-clock.long { font-size: min(17vw, 32dvh); } }
+.step-open .sub { display: block; font-size: .75rem; font-weight: 500; opacity: .8; }

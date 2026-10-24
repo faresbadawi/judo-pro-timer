@@ -18,10 +18,13 @@ export default {
   'tpl.randori': 'Randori 4 Min × 5', 'tpl.randoriUchi': 'Randori + Uchi-komi', 'tpl.threeThreeTwo': '3 · 3 · 2 Minuten',
   'tpl.open': 'Open Randori', 'tpl.tabata': 'Tabata 20/10', 'tpl.hiit4020': 'HIIT 40/20', 'tpl.conditioning': 'Kondition',
 
+  'tpl.ipponChange': 'Ippon Change 20 Min',
   'pe.new': 'Neues Programm', 'pe.edit': 'Programm bearbeiten', 'pe.name': 'Name', 'pe.namePh': 'z. B. Randori und Uchi-komi',
   'pe.steps': 'Schritte', 'pe.stepName': 'Name des Schritts', 'pe.duration': 'Dauer', 'pe.pause': 'Pause danach',
   'pe.openToggle': 'Open (ohne Zeitlimit)', 'pe.open': 'Open', 'pe.openLong': 'Open – du beendest ihn per Tipp',
   'pe.addStep': 'Schritt hinzufügen', 'pe.minStep': 'Mindestens ein Schritt muss bleiben.',
+  'pe.quietToggle': 'Ruhig (nur Hajime und Ende)',
+  'pe.quietHint': 'Für Ippon Change: keine Countdown-Töne dazwischen',
   'pe.more': 'Ablauf', 'pe.repeat': 'Wiederholungen', 'pe.repeatHint': 'Das ganze Programm so oft durchlaufen',
   'pe.repeatPause': 'Pause zwischen Wiederholungen', 'pe.warmup': 'Aufwärmen', 'pe.cooldown': 'Abwärmen',
   'pe.total': 'Gesamtdauer', 'pe.work': 'Davon Training',

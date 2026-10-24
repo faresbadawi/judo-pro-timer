@@ -125,3 +125,17 @@ test('Zurück springt an den Phasenanfang bzw. in die vorherige Phase', () => {
   r.previous();
   assert.equal(r.phase.type, 'work'); assert.equal(r.i, 0);
 });
+
+test('Ippon Change: in ruhigen Phasen keine Countdown-Töne, nur Phasenwechsel und Ende', () => {
+  const c = fakeClock();
+  const r = runner(programPhases({ steps: [{ name: 'Ippon Change', dur: 1200, pause: 0, quiet: true }] }), c);
+  r.start(); c.advance(1150000);          // 50 s vor Schluss
+  const cues = r.upcomingCues(60000);
+  assert.deepEqual(cues.map((x) => x.kind), ['finish']);
+  assert.equal(Math.round(cues[0].in / 1000), 50);
+  // Zum Vergleich: dieselbe Phase ohne "ruhig" hat Countdown-Töne
+  const c2 = fakeClock();
+  const r2 = runner(programPhases({ steps: [{ name: 'Randori', dur: 1200, pause: 0 }] }), c2);
+  r2.start(); c2.advance(1150000);
+  assert.ok(r2.upcomingCues(60000).filter((x) => x.kind === 'countdown').length >= 5);
+});

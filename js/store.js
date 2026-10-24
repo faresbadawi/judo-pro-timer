@@ -29,6 +29,7 @@ function defaultTemplates() {
     P('tpl.randoriUchi', [{ name: 'Randori', dur: 300, open: false, pause: 0 }, { name: 'Uchi-komi', dur: 60, open: false, pause: 30 }], { repeat: 4 }),
     P('tpl.threeThreeTwo', [{ name: 'Randori 1', dur: 180, open: false, pause: 20 }, { name: 'Randori 2', dur: 180, open: false, pause: 20 }, { name: 'Randori 3', dur: 120, open: false, pause: 0 }]),
     P('tpl.open', [{ name: 'Randori', dur: 0, open: true, pause: 30 }], { repeat: 3 }),
+    P('tpl.ipponChange', [{ name: 'Ippon Change', dur: 1200, open: false, quiet: true, pause: 0 }]),
     H('tpl.tabata', { rounds: 8, exercises: [{ name: 'Work', work: 20, rest: 10 }] }),
     H('tpl.hiit4020', { warmup: 120, cooldown: 60, rounds: 6, exercises: [{ name: 'Work', work: 40, rest: 20 }] }),
     H('tpl.conditioning', { warmup: 120, cooldown: 120, sets: 2, setRest: 60, rounds: 2, exercises: [
@@ -78,7 +79,7 @@ export function duplicateItem(id) {
   state.items.push(copy); commit();
   return copy;
 }
-export function newProgram() { return { id: newId(), kind: 'program', nameKey: null, name: '', steps: [{ name: 'Randori', dur: 240, open: false, pause: 30 }], repeat: 1, repeatPause: 0, warmup: 0, cooldown: 0 }; }
+export function newProgram() { return { id: newId(), kind: 'program', nameKey: null, name: '', steps: [{ name: 'Randori', dur: 240, open: false, quiet: false, pause: 30 }], repeat: 1, repeatPause: 0, warmup: 0, cooldown: 0 }; }
 export function newHiit() { return { id: newId(), kind: 'hiit', nameKey: null, name: '', warmup: 0, cooldown: 0, sets: 1, setRest: 60, rounds: 8, roundRest: 0, reps: 1, exercises: [{ name: 'Work', work: 20, rest: 10 }] }; }
 
 export function addHistory(entry) {

@@ -102,7 +102,8 @@ export function programEditor(id) {
             s.open ? h('div', { class: 'open-tag' }, icon('hourglass'), t('pe.openLong')) : durationField({ value: s.dur || 240, min: 5, step: 15, label: t('pe.duration'), onChange: (v) => { s.dur = v; updateSummary(); } })),
           h('div', { class: 'fld' }, h('label', {}, t('pe.pause')),
             durationField({ value: s.pause, min: 0, step: 5, label: t('pe.pause'), onChange: (v) => { s.pause = v; updateSummary(); } }))),
-        h('div', { class: 'step-open' }, h('span', {}, t('pe.openToggle')), toggle(s.open, (v) => { s.open = v; if (!v && !s.dur) s.dur = 240; drawSteps(); updateSummary(); }, t('pe.openToggle'))))));
+        h('div', { class: 'step-open' }, h('span', {}, t('pe.openToggle')), toggle(s.open, (v) => { s.open = v; if (!v && !s.dur) s.dur = 240; drawSteps(); updateSummary(); }, t('pe.openToggle'))),
+        h('div', { class: 'step-open' }, h('span', {}, h('span', {}, t('pe.quietToggle')), h('small', { class: 'sub' }, t('pe.quietHint'))), toggle(s.quiet, (v) => { s.quiet = v; }, t('pe.quietToggle'))))));
   };
 
   const save = () => {
@@ -121,7 +122,7 @@ export function programEditor(id) {
     topBar(existing ? t('pe.edit') : t('pe.new')),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('pe.namePh'), oninput: (e) => { d.name = e.target.value; } })),
     h('h3', { class: 'sec-title' }, t('pe.steps')), stepsBox,
-    h('button', { type: 'button', class: 'btn add', onclick: () => { const last = d.steps.at(-1); d.steps.push({ name: '', dur: last?.dur || 240, open: false, pause: last?.pause ?? 30 }); drawSteps(); updateSummary(); } }, icon('plus'), t('pe.addStep')),
+    h('button', { type: 'button', class: 'btn add', onclick: () => { const last = d.steps.at(-1); d.steps.push({ name: '', dur: last?.dur || 240, open: false, quiet: false, pause: last?.pause ?? 30 }); drawSteps(); updateSummary(); } }, icon('plus'), t('pe.addStep')),
     h('h3', { class: 'sec-title' }, t('pe.more')),
     h('div', { class: 'card' },
       row(t('pe.repeat'), counter({ value: d.repeat, min: 1, max: 99, unit: '×', label: t('pe.repeat'), onChange: (v) => { d.repeat = v; updateSummary(); } }), t('pe.repeatHint')),

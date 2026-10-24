@@ -44,3 +44,9 @@ test('Validierung', () => {
   assert.deepEqual(validateProgram(mergeProgram({ steps: [step('x', 0, 0, true)] })), []);
   assert.deepEqual(validateProgram(mergeProgram({ repeat: 0 })), ['repeat']);
 });
+
+test('Ruhiger Schritt (Ippon Change): Phase ist markiert', () => {
+  const ph = programPhases({ steps: [{ name: 'Ippon Change', dur: 1200, pause: 0, quiet: true }] });
+  assert.equal(ph[0].quiet, true); assert.equal(ph[0].dur, 1200);
+  assert.equal(programPhases({ steps: [{ name: 'x', dur: 60 }] })[0].quiet, false);
+});
