@@ -24,11 +24,12 @@ function route() {
   currentCleanup?.(); currentCleanup = null;
   let view;
   if (kind === 'program') view = programEditor(id || 'new');
-  else if (kind === 'hiit') view = hiitEditor(id || 'new');
-  else if (kind === 'run') view = hasSession() ? runView() : homeView();
+  else if (kind === 'hiit' && id) view = hiitEditor(id);
+  else if (kind === 'hiit') view = homeView('hiit');
+  else if (kind === 'run') view = hasSession() ? runView() : homeView('judo');
   else if (kind === 'history') view = historyView();
   else if (kind === 'settings') view = settingsView();
-  else view = homeView();
+  else view = homeView('judo');
   if (kind === 'run' && !hasSession()) { location.replace('#/'); return; }
   document.body.classList.toggle('on-run', kind === 'run');
   fill(app, view);

@@ -13,6 +13,7 @@ export default {
   'aria.up': 'تحريك للأعلى', 'aria.down': 'تحريك للأسفل',
   'err.empty': 'هذا البرنامج لا يحتوي على مراحل.', 'err.invalid': 'تحقق من المدخلات (المدة والأعداد).',
 
+  'tab.judo': 'جودو', 'tab.hiit': 'HIIT',
   'home.tagline': 'مؤقّت المدرّب', 'home.running': 'قيد التشغيل الآن',
   'home.programs': 'برامج الجودو', 'home.programsSub': 'راندوري، أوتشي كومي، فترات راحة – ركّبها كما تشاء',
   'home.newProgram': 'برنامج جديد', 'home.hiit': 'مؤقّت HIIT', 'home.hiitSub': 'جولات ومجموعات وعمل وراحة',

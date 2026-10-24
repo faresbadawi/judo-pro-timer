@@ -11,6 +11,7 @@ export default {
   'aria.up': 'Move up', 'aria.down': 'Move down',
   'err.empty': 'This program has no phases.', 'err.invalid': 'Please check the entries (duration, counts).',
 
+  'tab.judo': 'Judo', 'tab.hiit': 'HIIT',
   'home.tagline': 'Coach timer', 'home.running': 'Running now',
   'home.programs': 'Judo programs', 'home.programsSub': 'Randori, uchi-komi, breaks – build your own',
   'home.newProgram': 'New program', 'home.hiit': 'HIIT timer', 'home.hiitSub': 'Rounds, sets, work and rest',

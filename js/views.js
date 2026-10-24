@@ -37,28 +37,23 @@ export async function launch(item) {
   if (ok) go('#/run'); else toast(t('err.empty'));
 }
 
-export function homeView() {
-  const programs = store.items('program'); const hiits = store.items('hiit');
+// Start mit zwei Tabs unten: Judo-Programme | HIIT-Timer
+export function homeView(tab = 'judo') {
   const live = sess.isLive();
-  return h('div', { class: 'page home' },
+  const isHiit = tab === 'hiit';
+  const list = store.items(isHiit ? 'hiit' : 'program');
+  const tabBtn = (key, ic, label, hash) => h('button', { type: 'button', class: 'tab' + (tab === key ? ' active' : ''), 'aria-current': tab === key ? 'page' : null, onclick: () => go(hash) }, icon(ic), h('span', {}, label));
+  return h('div', { class: 'page home has-tabs' },
     h('header', { class: 'brand-bar' },
       h('div', { class: 'brand' }, h('span', { class: 'mark' }, icon('belt')), h('div', {}, h('b', {}, 'JUDO PRO TIMER'), h('small', {}, t('home.tagline')))),
-      iconBtn('gear', t('set.title'), () => go('#/settings'))),
+      h('div', { class: 'bar-actions' }, iconBtn('history', t('hist.title'), () => go('#/history')), iconBtn('gear', t('set.title'), () => go('#/settings')))),
     live ? h('button', { type: 'button', class: 'live-banner', onclick: () => go('#/run') }, icon('timer'), h('span', {}, `${t('home.running')}: ${store.itemName(sess.session.item)}`), icon('next', 'flip')) : null,
-
-    h('section', {},
-      h('div', { class: 'sec-head' }, h('div', {}, h('h2', {}, t('home.programs')), h('p', { class: 'muted small' }, t('home.programsSub')))),
-      programs.map(itemCard),
-      h('button', { type: 'button', class: 'btn add', onclick: () => go('#/program/new') }, icon('plus'), t('home.newProgram'))),
-
-    h('section', {},
-      h('div', { class: 'sec-head' }, h('div', {}, h('h2', {}, t('home.hiit')), h('p', { class: 'muted small' }, t('home.hiitSub')))),
-      hiits.map(itemCard),
-      h('button', { type: 'button', class: 'btn add', onclick: () => go('#/hiit/new') }, icon('plus'), t('home.newHiit'))),
-
-    h('div', { class: 'foot-links' },
-      h('button', { type: 'button', class: 'link', onclick: () => go('#/history') }, icon('history'), t('hist.title')),
-      h('button', { type: 'button', class: 'link', onclick: () => go('#/settings') }, icon('gear'), t('set.title'))));
+    h('div', { class: 'sec-head' }, h('h2', {}, t(isHiit ? 'home.hiit' : 'home.programs')), h('p', { class: 'muted small' }, t(isHiit ? 'home.hiitSub' : 'home.programsSub'))),
+    list.map(itemCard),
+    h('button', { type: 'button', class: 'btn add', onclick: () => go(isHiit ? '#/hiit/new' : '#/program/new') }, icon('plus'), t(isHiit ? 'home.newHiit' : 'home.newProgram')),
+    h('nav', { class: 'tabbar', 'aria-label': t('app.title') },
+      tabBtn('judo', 'belt', t('tab.judo'), '#/'),
+      tabBtn('hiit', 'bolt', t('tab.hiit'), '#/hiit')));
 }
 
 /* =============== Editor: Judo-Programm =============== */
@@ -179,7 +174,7 @@ export function hiitEditor(id) {
   };
   drawEx(); updateSummary();
   return h('div', { class: 'page editor' },
-    topBar(existing ? t('he.edit') : t('he.new')),
+    topBar(existing ? t('he.edit') : t('he.new'), '#/hiit'),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('he.namePh'), oninput: (e) => { d.name = e.target.value; } })),
     h('div', { class: 'card' }, row(t('pe.warmup'), durationField({ value: d.warmup, min: 0, step: 15, label: t('pe.warmup'), onChange: (v) => { d.warmup = v; updateSummary(); } }))),
     h('h3', { class: 'sec-title' }, t('he.exercises')), exBox,
@@ -192,15 +187,16 @@ export function hiitEditor(id) {
       row(t('he.sets'), counter({ value: d.sets, min: 1, max: 99, unit: '×', label: t('he.sets'), onChange: (v) => { d.sets = v; updateSummary(); } })),
       row(t('he.setRest'), durationField({ value: d.setRest, min: 0, step: 5, label: t('he.setRest'), onChange: (v) => { d.setRest = v; updateSummary(); } })),
       row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, step: 15, label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
-    existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/'); } } }, icon('trash'), t('common.delete')) : null,
+    existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/hiit'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
-      h('button', { type: 'button', class: 'btn', onclick: () => { if (save()) { toast(t('common.saved')); go('#/'); } } }, icon('check'), t('common.save')),
+      h('button', { type: 'button', class: 'btn', onclick: () => { if (save()) { toast(t('common.saved')); go('#/hiit'); } } }, icon('check'), t('common.save')),
       h('button', { type: 'button', class: 'btn primary', onclick: () => { const it = save(); if (it) launch(it); } }, icon('play'), t('common.start'))]));
 }
 
 /* =============== Lauf-Bildschirm =============== */
 
+const backHash = () => (sess.session.item?.kind === 'hiit' ? '#/hiit' : '#/');
 const PHASE_CLASS = { warmup: 'warm', work: 'work', rest: 'rest', extra: 'rest', setrest: 'rest', cooldown: 'warm' };
 
 export function runView() {
@@ -258,7 +254,8 @@ export function runView() {
   const askStop = async () => {
     const live = sess.isLive();
     if (live) { const wasRunning = r.state === 'running'; if (wasRunning) sess.pause(); const ok = await confirmDialog(t('run.stopText'), { ok: t('run.stop'), title: t('run.stopTitle') }); if (!ok) { if (wasRunning) sess.resume(); return; } }
-    sess.stopSession(true); go('#/');
+    const back = backHash();
+    sess.stopSession(true); go(back);
   };
   const fs = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); };
   const small = (label, fn, ic) => h('button', { type: 'button', class: 'sbtn', onclick: fn }, ic ? icon(ic) : null, label);
@@ -267,7 +264,7 @@ export function runView() {
     h('header', { class: 'run-top' },
       iconBtn('close', t('run.stop'), askStop, 'flat'),
       h('div', { class: 'run-title' }, store.itemName(sess.session.item)),
-      h('div', { class: 'run-top-r' }, iconBtn('expand', t('run.fullscreen'), fs, 'flat'), iconBtn('down', t('run.minimize'), () => go('#/'), 'flat'))),
+      h('div', { class: 'run-top-r' }, iconBtn('expand', t('run.fullscreen'), fs, 'flat'), iconBtn('down', t('run.minimize'), () => go(backHash()), 'flat'))),
     h('div', { class: 'run-bar' }, el.bar),
     h('div', { class: 'run-main', onclick: () => sess.toggle() }, el.phase, el.label, el.clock, el.meta, el.next),
     h('div', { class: 'run-side' },

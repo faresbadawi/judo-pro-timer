@@ -11,6 +11,7 @@ export default {
   'aria.up': 'Nach oben', 'aria.down': 'Nach unten',
   'err.empty': 'Das Programm hat keine Phasen.', 'err.invalid': 'Bitte prüfe die Eingaben (Dauer, Anzahl).',
 
+  'tab.judo': 'Judo', 'tab.hiit': 'HIIT',
   'home.tagline': 'Trainer-Timer', 'home.running': 'Läuft gerade',
   'home.programs': 'Judo-Programme', 'home.programsSub': 'Randori, Uchi-komi, Pausen – frei zusammenstellen',
   'home.newProgram': 'Neues Programm', 'home.hiit': 'HIIT-Timer', 'home.hiitSub': 'Runden, Sets, Arbeit und Pause',
