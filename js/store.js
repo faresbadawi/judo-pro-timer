@@ -1,5 +1,6 @@
 // Lokale Datenhaltung: Einstellungen, Programme, HIIT-Vorlagen und Verlauf (localStorage).
 import { t } from './i18n.js';
+import { mergeProgram } from './engine/program.js';
 
 const KEY = 'judo.v1';
 
@@ -21,20 +22,21 @@ export const DEFAULT_SETTINGS = {
 
 export const newId = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 
-const P = (nameKey, steps, extra = {}) => ({ id: newId(), kind: 'program', nameKey, name: '', steps, repeat: 1, repeatPause: 0, warmup: 0, cooldown: 0, ...extra });
+const blk = (kind, dur, extra = {}) => ({ kind, name: kind === 'randori' ? 'Randori' : '', dur, open: false, quiet: false, ...extra });
+const P = (nameKey, blocks, extra = {}) => ({ id: newId(), kind: 'program', nameKey, name: '', blocks, repeat: 1, repeatPause: 0, start: 10, cooldown: 0, ...extra });
 const H = (nameKey, cfg) => ({ id: newId(), kind: 'hiit', nameKey, name: '', warmup: 0, cooldown: 0, sets: 1, setRest: 60, rounds: 8, roundRest: 0, reps: 1, ...cfg });
 
 function defaultTemplates() {
   return [
-    P('tpl.randori', [{ name: 'Randori', dur: 240, open: false, pause: 30 }], { repeat: 5 }),
-    P('tpl.randoriUchi', [{ name: 'Randori', dur: 300, open: false, pause: 0 }, { name: 'Uchi-komi', dur: 60, open: false, pause: 30 }], { repeat: 4 }),
-    P('tpl.threeThreeTwo', [{ name: 'Randori 1', dur: 180, open: false, pause: 20 }, { name: 'Randori 2', dur: 180, open: false, pause: 20 }, { name: 'Randori 3', dur: 120, open: false, pause: 0 }]),
-    P('tpl.open', [{ name: 'Randori', dur: 0, open: true, pause: 30 }], { repeat: 3 }),
-    P('tpl.ipponChange', [{ name: 'Ippon Change', dur: 1200, open: false, quiet: true, pause: 0 }]),
-    H('tpl.tabata', { rounds: 8, exercises: [{ name: 'Work', work: 20, rest: 10 }] }),
-    H('tpl.hiit4020', { warmup: 120, cooldown: 60, rounds: 6, exercises: [{ name: 'Work', work: 40, rest: 20 }] }),
+    P('tpl.randori', [blk('randori', 240), blk('pause', 30)], { repeat: 5 }),
+    P('tpl.randoriUchi', [blk('randori', 300), blk('exercise', 60, { name: 'Uchi-komi' }), blk('pause', 30)], { repeat: 4 }),
+    P('tpl.threeThreeTwo', [blk('randori', 180), blk('pause', 20), blk('randori', 180), blk('pause', 20), blk('randori', 120)]),
+    P('tpl.open', [blk('randori', 0, { open: true }), blk('pause', 30)], { repeat: 3 }),
+    P('tpl.ipponChange', [blk('exercise', 1200, { name: 'Ippon Change', quiet: true })]),
+    H('tpl.tabata', { rounds: 8, exercises: [{ work: 20, rest: 10 }] }),
+    H('tpl.hiit4020', { warmup: 120, cooldown: 60, rounds: 6, exercises: [{ work: 40, rest: 20 }] }),
     H('tpl.conditioning', { warmup: 120, cooldown: 120, sets: 2, setRest: 60, rounds: 2, exercises: [
-      { name: 'Burpees', work: 40, rest: 20 }, { name: 'Squat jumps', work: 40, rest: 20 }, { name: 'Mountain climbers', work: 40, rest: 20 }, { name: 'Plank', work: 40, rest: 20 }] })
+      { work: 40, rest: 20 }, { work: 40, rest: 20 }, { work: 40, rest: 20 }, { work: 40, rest: 20 }] })
   ];
 }
 
@@ -52,7 +54,14 @@ export function init() {
   };
   // Frühe Version: Standard war die Tempelglocke; neuer Standard ist der Turnier-Gong
   if (s.settings && !s.settings.v2) { if (state.settings.bell === 'temple') state.settings.bell = 'dong'; state.settings.v2 = true; save(); }
-  if (!s.items) save();
+  // Ältere Programme (Schritte mit "Pause danach") in Blöcke umwandeln, HIIT-Übungsnamen entfernen
+  let migrated = false;
+  state.items = state.items.map((it) => {
+    if (it.kind === 'program' && it.steps) { migrated = true; return { ...mergeProgram(it), id: it.id, kind: 'program', nameKey: it.nameKey, name: it.name }; }
+    if (it.kind === 'hiit' && it.exercises?.some((e) => 'name' in e)) { migrated = true; return { ...it, exercises: it.exercises.map(({ work, rest }) => ({ work, rest })) }; }
+    return it;
+  });
+  if (!s.items || migrated) save();
 }
 
 function save() {
@@ -82,8 +91,8 @@ export function duplicateItem(id) {
   state.items.push(copy); commit();
   return copy;
 }
-export function newProgram() { return { id: newId(), kind: 'program', nameKey: null, name: '', steps: [{ name: 'Randori', dur: 240, open: false, quiet: false, pause: 30 }], repeat: 1, repeatPause: 0, warmup: 0, cooldown: 0 }; }
-export function newHiit() { return { id: newId(), kind: 'hiit', nameKey: null, name: '', warmup: 0, cooldown: 0, sets: 1, setRest: 60, rounds: 8, roundRest: 0, reps: 1, exercises: [{ name: 'Work', work: 20, rest: 10 }] }; }
+export function newProgram() { return { id: newId(), kind: 'program', nameKey: null, name: '', blocks: [blk('randori', 240), blk('pause', 30), blk('randori', 240)], repeat: 1, repeatPause: 0, start: 10, cooldown: 0 }; }
+export function newHiit() { return { id: newId(), kind: 'hiit', nameKey: null, name: '', warmup: 0, cooldown: 0, sets: 1, setRest: 60, rounds: 8, roundRest: 0, reps: 1, exercises: [{ work: 20, rest: 10 }] }; }
 
 export function addHistory(entry) {
   state.history.push({ t: new Date().toISOString(), ...entry });

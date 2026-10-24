@@ -6,7 +6,7 @@ import * as store from './store.js';
 import * as sess from './session.js';
 import * as audio from './audio.js';
 import { t, tm, LANGS } from './i18n.js';
-import { programTotals, mergeProgram, validateProgram } from './engine/program.js';
+import { programTotals, mergeProgram, validateProgram, newBlockId } from './engine/program.js';
 import { buildPhases, totalSeconds, workSeconds, mergeIntervalConfig, validateIntervalConfig } from './engine/interval.js';
 import { formatClock, formatElapsed } from './engine/clock.js';
 
@@ -18,7 +18,7 @@ function summary(item) {
   if (item.kind === 'program') {
     const tot = programTotals(item);
     const open = tot.hasOpen ? ` + ${t('pe.open')}` : '';
-    return `${t('n.steps', { n: item.steps.length })}${item.repeat > 1 ? ` × ${item.repeat}` : ''} · ${humanDur(tot.seconds)}${open}`;
+    return `${t('n.blocks', { n: mergeProgram(item).blocks.filter((b) => b.kind !== 'pause').length })}${item.repeat > 1 ? ` × ${item.repeat}` : ''} · ${humanDur(tot.seconds)}${open}`;
   }
   const ph = buildPhases(item);
   return `${t('n.rounds', { n: item.rounds })}${item.sets > 1 ? ` · ${t('n.sets', { n: item.sets })}` : ''} · ${humanDur(totalSeconds(ph))}`;
@@ -68,37 +68,94 @@ function stickyBar(sumEl, actions) {
 
 export function programEditor(id) {
   const existing = id !== 'new' ? store.getItem(id) : null;
-  const d = existing ? structuredClone(existing) : store.newProgram();
+  const d = existing ? mergeProgram(existing) : mergeProgram(store.newProgram());
+  d.id = existing ? existing.id : store.newProgram().id;
+  d.nameKey = existing ? existing.nameKey : null;
   d.name = existing ? store.itemName(existing) : '';
   const shown = d.name;
-  const stepsBox = h('div', { class: 'steps' });
+  const list = h('div', { class: 'blocks' });
   const sumEl = h('div', { class: 'sumline' });
 
-  const cfg = () => mergeProgram({ ...d, steps: d.steps });
   const updateSummary = () => {
-    const tot = programTotals(cfg());
+    const tot = programTotals(d);
     fill(sumEl, h('div', {}, h('small', {}, t('pe.total')), h('b', {}, humanDur(tot.seconds) + (tot.hasOpen ? ` + ${t('pe.open')}` : ''))),
       h('div', {}, h('small', {}, t('pe.work')), h('b', {}, humanDur(tot.workSeconds))));
   };
 
-  const drawSteps = () => {
-    fill(stepsBox, d.steps.map((s, i) =>
-      h('div', { class: 'card step' },
-        h('div', { class: 'step-head' },
-          h('span', { class: 'step-n' }, i + 1),
-          h('input', { type: 'text', class: 'name-input', value: s.name, maxlength: 40, placeholder: t('pe.stepName'), 'aria-label': t('pe.stepName'), oninput: (e) => { s.name = e.target.value; } }),
-          h('div', { class: 'tools' },
-            iconBtn('up', t('aria.up'), () => { if (i > 0) { [d.steps[i - 1], d.steps[i]] = [d.steps[i], d.steps[i - 1]]; drawSteps(); } }, 'sm'),
-            iconBtn('down', t('aria.down'), () => { if (i < d.steps.length - 1) { [d.steps[i + 1], d.steps[i]] = [d.steps[i], d.steps[i + 1]]; drawSteps(); } }, 'sm'),
-            iconBtn('copy', t('common.duplicate'), () => { d.steps.splice(i + 1, 0, { ...s }); drawSteps(); updateSummary(); }, 'sm'),
-            iconBtn('trash', t('common.remove'), () => { if (d.steps.length > 1) { d.steps.splice(i, 1); drawSteps(); updateSummary(); } else toast(t('pe.minStep')); }, 'sm danger'))),
-        h('div', { class: 'step-grid' },
-          h('div', { class: 'fld' }, h('label', {}, t('pe.duration')),
-            s.open ? h('div', { class: 'open-tag' }, icon('hourglass'), t('pe.openLong')) : durationField({ value: s.dur || 240, min: 5, step: 15, label: t('pe.duration'), onChange: (v) => { s.dur = v; updateSummary(); } })),
-          h('div', { class: 'fld' }, h('label', {}, t('pe.pause')),
-            durationField({ value: s.pause, min: 0, step: 5, label: t('pe.pause'), onChange: (v) => { s.pause = v; updateSummary(); } }))),
-        h('div', { class: 'step-open' }, h('span', {}, t('pe.openToggle')), toggle(s.open, (v) => { s.open = v; if (!v && !s.dur) s.dur = 240; drawSteps(); updateSummary(); }, t('pe.openToggle'))),
-        h('div', { class: 'step-open' }, h('span', {}, h('span', {}, t('pe.quietToggle')), h('small', { class: 'sub' }, t('pe.quietHint'))), toggle(s.quiet, (v) => { s.quiet = v; }, t('pe.quietToggle'))))));
+  // Block per Zeiger ziehen: der Griff ist links, beim Ziehen rücken die anderen Blöcke zur Seite
+  const startDrag = (e, card, from) => {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    try { handle.setPointerCapture(e.pointerId); } catch { /* synthetischer Zeiger */ }
+    const cards = [...list.children];
+    const rects = cards.map((c) => c.getBoundingClientRect());
+    const gap = cards.length > 1 ? Math.max(0, rects[1].top - rects[0].bottom) : 0;
+    const size = rects[from].height + gap;
+    const startY = e.clientY; const startScroll = window.scrollY;
+    let to = from; let y = startY;
+    card.classList.add('dragging');
+    const place = () => {
+      const dy = y - startY + (window.scrollY - startScroll);
+      card.style.transform = `translateY(${dy}px)`;
+      const center = rects[from].top + rects[from].height / 2 + dy;
+      to = from;
+      cards.forEach((_, i) => { if (i < from && center < rects[i].top + rects[i].height / 2) to = Math.min(to, i); if (i > from && center > rects[i].top + rects[i].height / 2) to = Math.max(to, i); });
+      cards.forEach((c, i) => {
+        if (i === from) return;
+        c.style.transform = (from < to && i > from && i <= to) ? `translateY(${-size}px)` : (to < from && i >= to && i < from) ? `translateY(${size}px)` : '';
+      });
+    };
+    const edge = setInterval(() => {
+      const step = y < 90 ? -12 : y > window.innerHeight - 150 ? 12 : 0;
+      if (step) { window.scrollBy(0, step); place(); }
+    }, 16);
+    const move = (ev) => { y = ev.clientY; place(); };
+    const end = (ev) => {
+      clearInterval(edge);
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', end);
+      handle.removeEventListener('pointercancel', end);
+      if (ev.type !== 'pointercancel' && to !== from) { const [b] = d.blocks.splice(from, 1); d.blocks.splice(to, 0, b); }
+      drawBlocks(); updateSummary();
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  };
+
+  const move = (i, delta) => { const j = i + delta; if (j < 0 || j >= d.blocks.length) return; [d.blocks[i], d.blocks[j]] = [d.blocks[j], d.blocks[i]]; drawBlocks(); list.children[j]?.querySelector('.grip')?.focus(); };
+
+  const drawBlocks = () => {
+    fill(list, d.blocks.map((b, i) => {
+      const pause = b.kind === 'pause';
+      const grip = h('button', { type: 'button', class: 'grip', 'aria-label': t('aria.drag'), title: t('aria.drag'),
+        onkeydown: (e) => { if (e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); } else if (e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); } } }, icon('grip'));
+      const card = h('div', { class: `card blk blk-${b.kind}${b.more ? ' open-more' : ''}` });
+      grip.addEventListener('pointerdown', (e) => startDrag(e, card, i));
+      const nameEl = b.kind === 'exercise'
+        ? h('input', { type: 'text', class: 'name-input', value: b.name, maxlength: 30, placeholder: t('blk.exercisePh'), 'aria-label': t('blk.exercise'), oninput: (e) => { b.name = e.target.value; } })
+        : h('span', { class: 'blk-title' }, t('blk.' + b.kind));
+      const tools = [];
+      if (!pause) tools.push(iconBtn('gear', t('blk.options'), () => { b.more = !b.more; drawBlocks(); }, 'sm' + (b.open || b.quiet ? ' on' : '')));
+      tools.push(iconBtn('copy', t('common.duplicate'), () => { d.blocks.splice(i + 1, 0, { ...b, id: newBlockId(), more: false }); drawBlocks(); updateSummary(); }, 'sm'));
+      tools.push(iconBtn('trash', t('common.remove'), () => { d.blocks.splice(i, 1); drawBlocks(); updateSummary(); }, 'sm danger'));
+      const timeEl = b.open
+        ? h('div', { class: 'open-tag' }, icon('hourglass'), t('pe.openLong'))
+        : durationField({ value: b.dur || 60, min: pause ? 1 : 5, step: pause ? 5 : 15, label: t('pe.duration'), onChange: (v) => { b.dur = v; updateSummary(); } });
+      card.append(h('div', { class: 'blk-head' }, grip, nameEl), h('div', { class: 'blk-row' }, timeEl, h('div', { class: 'tools' }, tools)));
+      if (b.more && !pause) card.append(h('div', { class: 'blk-more' },
+        h('div', { class: 'step-open' }, h('span', {}, t('pe.openToggle')), toggle(b.open, (v) => { b.open = v; if (!v && !b.dur) b.dur = 240; drawBlocks(); updateSummary(); }, t('pe.openToggle'))),
+        h('div', { class: 'step-open' }, h('span', {}, h('span', {}, t('pe.quietToggle')), h('small', { class: 'sub' }, t('pe.quietHint'))), toggle(b.quiet, (v) => { b.quiet = v; }, t('pe.quietToggle')))));
+      return card;
+    }));
+  };
+
+  const add = (kind) => {
+    const lastOf = (k) => [...d.blocks].reverse().find((x) => x.kind === k);
+    const base = { id: newBlockId(), kind, name: kind === 'randori' ? 'Randori' : '', open: false, quiet: false };
+    d.blocks.push({ ...base, dur: lastOf(kind)?.dur || { randori: 240, exercise: 60, pause: 30 }[kind] });
+    drawBlocks(); updateSummary();
+    list.lastElementChild?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   };
 
   const save = () => {
@@ -112,18 +169,23 @@ export function programEditor(id) {
     return out;
   };
 
-  drawSteps(); updateSummary();
+  drawBlocks(); updateSummary();
   return h('div', { class: 'page editor' },
     topBar(existing ? t('pe.edit') : t('pe.new')),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('pe.namePh'), oninput: (e) => { d.name = e.target.value; } })),
-    h('h3', { class: 'sec-title' }, t('pe.steps')), stepsBox,
-    h('button', { type: 'button', class: 'btn add', onclick: () => { const last = d.steps.at(-1); d.steps.push({ name: '', dur: last?.dur || 240, open: false, quiet: false, pause: last?.pause ?? 30 }); drawSteps(); updateSummary(); } }, icon('plus'), t('pe.addStep')),
-    h('h3', { class: 'sec-title' }, t('pe.more')),
+    h('h3', { class: 'sec-title' }, t('pe.general')),
     h('div', { class: 'card' },
+      row(t('pe.start'), durationField({ value: d.start, min: 0, step: 5, label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
+      row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, step: 15, label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } })),
       row(t('pe.repeat'), counter({ value: d.repeat, min: 1, max: 99, unit: '×', label: t('pe.repeat'), onChange: (v) => { d.repeat = v; updateSummary(); } }), t('pe.repeatHint')),
-      row(t('pe.repeatPause'), durationField({ value: d.repeatPause, min: 0, step: 5, label: t('pe.repeatPause'), onChange: (v) => { d.repeatPause = v; updateSummary(); } })),
-      row(t('pe.warmup'), durationField({ value: d.warmup, min: 0, step: 15, label: t('pe.warmup'), onChange: (v) => { d.warmup = v; updateSummary(); } })),
-      row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, step: 15, label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
+      row(t('pe.repeatPause'), durationField({ value: d.repeatPause, min: 0, step: 5, label: t('pe.repeatPause'), onChange: (v) => { d.repeatPause = v; updateSummary(); } }))),
+    h('h3', { class: 'sec-title' }, t('pe.sequence')),
+    h('p', { class: 'muted hint' }, t('pe.dragHint')),
+    list,
+    h('div', { class: 'add-row' },
+      h('button', { type: 'button', class: 'btn add', onclick: () => add('randori') }, icon('plus'), t('blk.randori')),
+      h('button', { type: 'button', class: 'btn add', onclick: () => add('exercise') }, icon('plus'), t('blk.exercise')),
+      h('button', { type: 'button', class: 'btn add', onclick: () => add('pause') }, icon('plus'), t('blk.pause'))),
     existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
@@ -152,7 +214,7 @@ export function hiitEditor(id) {
       h('div', { class: 'card step' },
         h('div', { class: 'step-head' },
           h('span', { class: 'step-n' }, i + 1),
-          h('input', { type: 'text', class: 'name-input', value: e.name, maxlength: 40, placeholder: t('he.exName'), 'aria-label': t('he.exName'), oninput: (ev) => { e.name = ev.target.value; } }),
+          h('span', { class: 'blk-title' }, t('he.exercise', { n: i + 1 })),
           h('div', { class: 'tools' },
             iconBtn('up', t('aria.up'), () => { if (i > 0) { [d.exercises[i - 1], d.exercises[i]] = [d.exercises[i], d.exercises[i - 1]]; drawEx(); } }, 'sm'),
             iconBtn('down', t('aria.down'), () => { if (i < d.exercises.length - 1) { [d.exercises[i + 1], d.exercises[i]] = [d.exercises[i], d.exercises[i + 1]]; drawEx(); } }, 'sm'),
@@ -178,7 +240,7 @@ export function hiitEditor(id) {
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('he.namePh'), oninput: (e) => { d.name = e.target.value; } })),
     h('div', { class: 'card' }, row(t('pe.warmup'), durationField({ value: d.warmup, min: 0, step: 15, label: t('pe.warmup'), onChange: (v) => { d.warmup = v; updateSummary(); } }))),
     h('h3', { class: 'sec-title' }, t('he.exercises')), exBox,
-    h('button', { type: 'button', class: 'btn add', onclick: () => { const last = d.exercises.at(-1); d.exercises.push({ name: '', work: last?.work || 30, rest: last?.rest ?? 15 }); drawEx(); updateSummary(); } }, icon('plus'), t('he.addEx')),
+    h('button', { type: 'button', class: 'btn add', onclick: () => { const last = d.exercises.at(-1); d.exercises.push({ work: last?.work || 30, rest: last?.rest ?? 15 }); drawEx(); updateSummary(); } }, icon('plus'), t('he.addEx')),
     h('h3', { class: 'sec-title' }, t('he.structure')),
     h('div', { class: 'card' },
       row(t('he.rounds'), counter({ value: d.rounds, min: 1, max: 99, unit: '×', label: t('he.rounds'), onChange: (v) => { d.rounds = v; updateSummary(); } }), t('he.roundsHint')),

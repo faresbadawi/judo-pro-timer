@@ -44,7 +44,7 @@ export function buildPhases(input) {
       for (let e = 0; e < exCount; e++) {
         const ex = c.exercises[e];
         for (let k = 1; k <= c.reps; k++) {
-          const base = { label: ex.name, set: s, sets, round: r, rounds, rep: k, reps: c.reps, exIdx: e, exCount };
+          const base = { label: '', set: s, sets, round: r, rounds, rep: k, reps: c.reps, exIdx: e, exCount };
           phases.push({ type: 'work', dur: ex.work, ...base });
           const lastUnitOfRound = e === exCount - 1 && k === c.reps;
           const lastRound = r === rounds;

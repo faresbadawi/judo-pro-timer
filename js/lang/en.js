@@ -8,6 +8,12 @@ export default {
   'n.steps': ({ n }) => (n === 1 ? '1 step' : `${n} steps`),
   'n.rounds': ({ n }) => (n === 1 ? '1 round' : `${n} rounds`),
   'n.sets': ({ n }) => (n === 1 ? '1 set' : `${n} sets`),
+  'n.blocks': ({ n }) => (n === 1 ? '1 block' : `${n} blocks`),
+  'blk.randori': 'Randori', 'blk.exercise': 'Exercise', 'blk.pause': 'Pause', 'blk.exercisePh': 'Name, e.g. Conditioning', 'blk.options': 'Options',
+  'aria.drag': 'Reorder (drag or arrow keys)',
+  'pe.general': 'General', 'pe.start': 'Countdown at the start', 'pe.startHint': 'Time to get ready before the first block',
+  'pe.sequence': 'Sequence', 'pe.dragHint': 'Add blocks and reorder them by dragging the handle.',
+  'he.exercise': ({ n }) => `Exercise ${n}`,
   'aria.up': 'Move up', 'aria.down': 'Move down',
   'err.empty': 'This program has no phases.', 'err.invalid': 'Please check the entries (duration, counts).',
 
