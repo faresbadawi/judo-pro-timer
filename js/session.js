@@ -58,6 +58,7 @@ export async function start(item) {
   const phases = phasesFor(item);
   if (!phases.length) return false;
   audio.unlock();
+  audio.setMode(item.kind === 'hiit' ? 'hiit' : 'judo');
   await audio.prepare();
   session.item = structuredClone(item);
   session.completed = false;
@@ -115,21 +116,28 @@ export function resume() {
 }
 export const toggle = () => (session.runner?.state === 'running' ? pause() : resume());
 
-function afterJump(prevType, events) {
+function afterJump(prevType, events, finalWork = false) {
   const e = events.find((x) => x.type === 'phaseStart');
   const fin = events.find((x) => x.type === 'finished');
-  if (fin) { audio.playNow(prevType, 'finish'); finish(); return; }
-  if (e) { audio.cancelScheduled(); audio.playNow(prevType, e.phase.type); }
+  if (fin) { audio.playNow(prevType, 'finish', 0.02, finalWork); finish(); return; }
+  if (e) { audio.cancelScheduled(); audio.playNow(prevType, e.phase.type, 0.02, finalWork); }
   reschedule(); emit('phase', e); emit('tick');
 }
 export function skip() {
   const r = session.runner; if (!r) return;
-  const from = r.phase.type;
-  afterJump(from, r.skip());
+  const from = r.phase.type; const fin = !!r.phase.finalWork;
+  afterJump(from, r.skip(), fin);
 }
 export function previous() {
   const r = session.runner; if (!r) return;
   afterJump('none', r.previous());
+}
+// Aktuelle Übung noch einmal von vorn (Zeit der Phase springt zurück, Ton und Hajime kommen neu)
+export function restartPhase() {
+  const r = session.runner; if (!r || r.state === 'finished') return;
+  audio.cancelScheduled(); r.restartPhase();
+  if (r.state === 'running') audio.playNow('none', r.phase.type);
+  reschedule(); emit('tick');
 }
 export function adjust(deltaSec) { const r = session.runner; if (!r) return; r.adjustCurrent(deltaSec); reschedule(); emit('tick'); }
 export function addRest(sec) { const r = session.runner; if (!r) return; r.insertRest(sec); reschedule(); emit('tick'); }

@@ -10,8 +10,10 @@ let current = 'de';
 // pref: 'auto' | 'de' | 'en' | 'ar'. Bei 'auto' zählt die Sprache des Geräts (andere Sprachen: Englisch).
 export function resolveLang(pref) {
   if (DICTS[pref]) return pref;
-  const n = (navigator.language || 'de').slice(0, 2).toLowerCase();
-  return DICTS[n] ? n : 'en';
+  // Erste unterstützte Sprache aus der Liste des Geräts; sonst Deutsch
+  const list = navigator.languages?.length ? navigator.languages : [navigator.language || 'de'];
+  for (const l of list) { const n = String(l).slice(0, 2).toLowerCase(); if (DICTS[n]) return n; }
+  return 'de';
 }
 export function setLang(l) {
   current = DICTS[l] ? l : 'de';

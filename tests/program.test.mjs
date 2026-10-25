@@ -26,29 +26,19 @@ test('Wiederholungen und Wiederholungs-Pause', () => {
   assert.equal(ph[0].round, 1); assert.equal(ph[6].round, 3);
 });
 
-test('Offener Schritt ("Open") hat keine Dauer und wird markiert', () => {
-  const p = { steps: [step('Open Randori', 0, 30, true), step('Uchi-komi', 60, 0)] };
-  const ph = programPhases(p);
-  assert.equal(ph[0].open, true); assert.equal(ph[0].dur, 0);
-  const t = programTotals(p);
-  assert.equal(t.hasOpen, true); assert.equal(t.seconds, 90);
+test('"Open" ohne Zeitlimit gibt es nicht mehr: alte offene Schritte bekommen eine feste Dauer', () => {
+  const m = mergeProgram({ steps: [step('Randori', 0, 30, true)] });
+  assert.equal(m.blocks[0].open, undefined); assert.equal(m.blocks[0].dur, 240);
 });
 
-test('Aufwärmen und Abwärmen', () => {
+test('Countdown am Anfang und Cooldown am Ende', () => {
   const ph = programPhases({ warmup: 120, cooldown: 60, steps: [step('Randori', 240)] });
-  assert.deepEqual(ph.map((x) => x.type), ['warmup', 'work', 'cooldown']);
+  assert.deepEqual(ph.map((x) => x.type), ['start', 'work', 'cooldown']);
 });
 
 test('Validierung', () => {
   assert.deepEqual(validateProgram(mergeProgram({ steps: [step('x', 0)] })), ['dur']);
-  assert.deepEqual(validateProgram(mergeProgram({ steps: [step('x', 0, 0, true)] })), []);
-  assert.deepEqual(validateProgram(mergeProgram({ repeat: 0 })), ['repeat']);
-});
-
-test('Ruhiger Schritt (Ippon Change): Phase ist markiert', () => {
-  const ph = programPhases({ steps: [{ name: 'Ippon Change', dur: 1200, pause: 0, quiet: true }] });
-  assert.equal(ph[0].quiet, true); assert.equal(ph[0].dur, 1200);
-  assert.equal(programPhases({ steps: [{ name: 'x', dur: 60 }] })[0].quiet, false);
+    assert.deepEqual(validateProgram(mergeProgram({ repeat: 0 })), ['repeat']);
 });
 
 const blk = (kind, dur, extra = {}) => ({ kind, name: kind === 'randori' ? 'Randori' : '', dur, ...extra });
@@ -57,7 +47,7 @@ test('Blöcke: Randori, Pause, Randori, Pause, Randori, Belastung, Pause', () =>
   const p = { start: 10, cooldown: 30, blocks: [blk('randori', 240), blk('pause', 30), blk('randori', 240), blk('pause', 30), blk('randori', 240), blk('exercise', 60, { name: 'Belastung' }), blk('pause', 20)] };
   const ph = programPhases(p);
   // Pause ganz am Ende entfällt, danach kommt der Cooldown
-  assert.deepEqual(ph.map((x) => x.type + x.dur), ['warmup10', 'work240', 'rest30', 'work240', 'rest30', 'work240', 'work60', 'cooldown30']);
+  assert.deepEqual(ph.map((x) => x.type + x.dur), ['start10', 'work240', 'rest30', 'work240', 'rest30', 'work240', 'work60', 'cooldown30']);
   assert.equal(ph[6].label, 'Belastung');
   assert.equal(ph[2].label, 'Randori');
   assert.equal(programTotals(p).seconds, 10 + 240 * 3 + 60 + 60 + 30);
@@ -71,4 +61,15 @@ test('Alte Programme (Schritte mit Pause danach) werden zu Blöcken', () => {
 
 test('Validierung: nur Pausen ist ungültig', () => {
   assert.deepEqual(validateProgram(mergeProgram({ blocks: [blk('pause', 30)] })), ['blocks']);
+});
+
+test('Standarddauern kommen aus den vorhandenen Blöcken', () => {
+  const m = mergeProgram({ blocks: [blk('randori', 210), blk('pause', 15)] });
+  assert.deepEqual(m.defaults, { randori: 210, exercise: 60, pause: 15 });
+  assert.deepEqual(mergeProgram({ blocks: [blk('randori', 210)], defaults: { randori: 180, exercise: 60, pause: 20 } }).defaults, { randori: 180, exercise: 60, pause: 20 });
+});
+
+test('Nur das letzte Randori des Programms ist finalWork', () => {
+  const ph = programPhases({ repeat: 2, blocks: [blk('randori', 60), blk('pause', 10), blk('randori', 60)] });
+  assert.deepEqual(ph.filter((x) => x.finalWork).map((x) => ph.indexOf(x)), [ph.length - 1]);
 });

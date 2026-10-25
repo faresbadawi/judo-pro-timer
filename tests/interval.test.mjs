@@ -20,14 +20,23 @@ test('HIIT: Sets, Set-Pause, Aufwärmen, Abwärmen, mehrere Übungen', () => {
   // Set: R1: A20,r10,B30,r5 | R2: A20,r10,B30 -> Set-Pause 45 ersetzt die letzte Übungspause
   const perSet = 20 + 10 + 30 + 5 + 20 + 10 + 30;
   assert.equal(totalSeconds(ph), 60 + perSet + 45 + perSet + 30);
-  assert.equal(ph[0].type, 'warmup'); assert.equal(ph.at(-1).type, 'cooldown');
+  assert.equal(ph[0].type, 'start'); assert.equal(ph.at(-1).type, 'cooldown');
   assert.equal(ph.filter((p) => p.type === 'setrest').length, 1);
 });
 
-test('HIIT: Wiederholungen je Übung und Rundenpause', () => {
-  const ph = buildPhases({ rounds: 2, reps: 3, roundRest: 15, exercises: [ex('A', 10, 5)] });
+test('HIIT: ältere Timer (Runden, Wiederholungen, Rundenpause) werden zur einfachen Übungsliste', () => {
+  const c = mergeIntervalConfig({ rounds: 2, reps: 3, roundRest: 15, exercises: [ex('A', 10, 5)] });
+  assert.equal(c.exercises.length, 6); assert.equal(c.rounds, 1); assert.equal(c.reps, 1);
+  const ph = buildPhases(c);
   assert.equal(ph.filter((p) => p.type === 'work').length, 6);
-  assert.equal(ph.filter((p) => p.type === 'extra').length, 1);
+  assert.equal(totalSeconds(ph), 6 * 10 + 5 * 5 + 15);
+});
+
+test('HIIT: Übungsnamen, Countdown am Anfang und letzte Übung mit Sore-made', () => {
+  const ph = buildPhases({ start: 10, cooldown: 20, sets: 2, setRest: 30, exercises: [ex('Liegestütz', 30, 10), ex('Kniebeugen', 30, 10)] });
+  assert.deepEqual(ph.map((p) => p.type), ['start', 'work', 'rest', 'work', 'setrest', 'work', 'rest', 'work', 'cooldown']);
+  assert.equal(ph[1].label, 'Liegestütz'); assert.equal(ph[2].label, 'Kniebeugen'); assert.equal(ph[4].label, 'Liegestütz');
+  assert.deepEqual(ph.filter((p) => p.finalWork).map((p) => ph.indexOf(p)), [7]);
 });
 
 test('Validierung', () => {
@@ -89,18 +98,6 @@ test('Läufer: Dauer ändern, Pause einfügen, überspringen – Summen passen s
   assert.equal(Math.round(r.activeMs() / 1000), 10);    // übersprungene Zeit zählt nicht als aktiv
 });
 
-test('Läufer: offene Phase zählt aufwärts bis der Trainer weiterschaltet', () => {
-  const c = fakeClock();
-  const r = runner(programPhases({ steps: [{ name: 'Open', open: true, pause: 10 }, { name: 'B', dur: 30 }] }), c);
-  r.start(); c.advance(500000); r.tick();
-  assert.equal(r.state, 'running'); assert.equal(r.isOpen(), true);
-  assert.equal(Math.round(r.phaseElapsed() / 1000), 500);
-  assert.equal(r.upcomingCues().length, 0);
-  r.skip();
-  assert.equal(r.phase.type, 'rest');
-  assert.equal(Math.round(r.activeMs() / 1000), 500);
-});
-
 test('Ton-Plan: Countdown, Phasenwechsel und Ende zum richtigen Zeitpunkt', () => {
   const c = fakeClock();
   const r = runner(programPhases({ steps: [{ name: 'A', dur: 20, pause: 6 }, { name: 'B', dur: 20 }] }), c);
@@ -126,16 +123,16 @@ test('Zurück springt an den Phasenanfang bzw. in die vorherige Phase', () => {
   assert.equal(r.phase.type, 'work'); assert.equal(r.i, 0);
 });
 
-test('Ippon Change: in ruhigen Phasen keine Countdown-Töne, nur Phasenwechsel und Ende', () => {
+test('Countdown am Anfang: Piepton jede Sekunde, Sore-made nur am letzten Randori', () => {
   const c = fakeClock();
-  const r = runner(programPhases({ steps: [{ name: 'Ippon Change', dur: 1200, pause: 0, quiet: true }] }), c);
-  r.start(); c.advance(1150000);          // 50 s vor Schluss
-  const cues = r.upcomingCues(60000);
-  assert.deepEqual(cues.map((x) => x.kind), ['finish']);
-  assert.equal(Math.round(cues[0].in / 1000), 50);
-  // Zum Vergleich: dieselbe Phase ohne "ruhig" hat Countdown-Töne
-  const c2 = fakeClock();
-  const r2 = runner(programPhases({ steps: [{ name: 'Randori', dur: 1200, pause: 0 }] }), c2);
-  r2.start(); c2.advance(1150000);
-  assert.ok(r2.upcomingCues(60000).filter((x) => x.kind === 'countdown').length >= 5);
+  const r = runner(programPhases({ start: 5, blocks: [{ kind: 'randori', name: 'Randori', dur: 20 }, { kind: 'pause', dur: 5 }, { kind: 'randori', name: 'Randori', dur: 20 }], cooldown: 10 }), c);
+  r.start();
+  const cues = r.upcomingCues(10000);
+  assert.deepEqual(cues.filter((x) => x.kind === 'countdown').map((x) => x.sec), [4, 3, 2, 1]);
+  assert.ok(cues.filter((x) => x.kind === 'countdown').every((x) => x.every));
+  r.skip();                                  // erstes Randori: Ende ohne finalWork
+  assert.equal(r.upcomingCues(60000).find((x) => x.kind === 'phase' && x.from === 'work').finalWork, false);
+  r.skip(); r.skip();                        // zweites Randori: Ende mit finalWork, danach Cooldown
+  const last = r.upcomingCues(60000).find((x) => x.kind === 'phase' && x.from === 'work');
+  assert.equal(last.finalWork, true); assert.equal(last.phaseType, 'cooldown');
 });

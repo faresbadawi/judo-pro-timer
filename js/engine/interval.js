@@ -3,31 +3,47 @@ import { Stopwatch, defaultNow } from './clock.js';
 
 export const DEFAULT_INTERVAL = {
   name: '',
-  warmup: 0,
+  start: 0,           // Countdown am Anfang (piept jede Sekunde)
   cooldown: 0,
-  sets: 1,
-  setRest: 60,        // Pause zwischen Sets
-  rounds: 5,          // Runden pro Set
-  roundRest: 0,       // zusätzliche Pause nach jeder Runde (ausser der letzten im Set), optional
-  reps: 1,            // Wiederholungen je Übung innerhalb einer Runde
-  exercises: [{ name: 'Randori', work: 180, rest: 30 }],
+  sets: 1,            // so oft wird die ganze Übungsfolge durchlaufen
+  setRest: 60,        // Pause zwischen den Sets
+  rounds: 1,          // nur noch 1: die Anzahl der Übungen bestimmt die Länge eines Sets
+  reps: 1,
+  roundRest: 0,
+  exercises: [{ name: '', work: 30, rest: 15 }],
+  defaults: { work: 30, rest: 15 },   // Standardzeiten für neue Übungen
   countdown: [10, 5, 3, 2, 1]
 };
 
+// Ältere Timer (Runden, Wiederholungen je Übung, Rundenpause, "Aufwärmen") werden in eine einfache Übungsliste umgewandelt.
 export function mergeIntervalConfig(c = {}) {
-  const exercises = (c.exercises && c.exercises.length ? c.exercises : DEFAULT_INTERVAL.exercises)
+  let exercises = (c.exercises && c.exercises.length ? c.exercises : DEFAULT_INTERVAL.exercises)
     .map((e) => ({ name: e.name ?? '', work: Number(e.work) || 0, rest: Number(e.rest) || 0 }));
-  return { ...DEFAULT_INTERVAL, ...c, exercises, countdown: c.countdown ? [...c.countdown] : [...DEFAULT_INTERVAL.countdown] };
+  const rounds = c.rounds ?? 1; const reps = c.reps ?? 1; const roundRest = c.roundRest ?? 0;
+  if (rounds > 1 || reps > 1) {
+    const out = [];
+    for (let r = 1; r <= rounds; r++) {
+      exercises.forEach((e, i) => {
+        for (let k = 1; k <= reps; k++) out.push({ ...e, rest: e.rest + (i === exercises.length - 1 && k === reps ? roundRest : 0) });
+      });
+    }
+    exercises = out;
+  }
+  const { warmup, ...rest } = c;
+  return {
+    ...DEFAULT_INTERVAL, ...rest, exercises, rounds: 1, reps: 1, roundRest: 0,
+    start: c.start ?? warmup ?? 0,
+    defaults: { work: exercises[0].work || 30, rest: exercises[0].rest || 15, ...(c.defaults || {}) },
+    countdown: c.countdown ? [...c.countdown] : [...DEFAULT_INTERVAL.countdown]
+  };
 }
 
 export function validateIntervalConfig(c) {
   const errors = [];
   if (!(c.sets >= 1 && c.sets <= 99)) errors.push('sets');
-  if (!(c.rounds >= 1 && c.rounds <= 99)) errors.push('rounds');
-  if (!(c.reps >= 1 && c.reps <= 99)) errors.push('reps');
-  if (!c.exercises.length) errors.push('exercises');
+  if (!c.exercises.length || c.exercises.length > 99) errors.push('exercises');
   if (c.exercises.some((e) => !(e.work >= 1))) errors.push('work');
-  if (c.warmup < 0 || c.cooldown < 0 || c.setRest < 0 || c.roundRest < 0) errors.push('negative');
+  if (c.start < 0 || c.cooldown < 0 || c.setRest < 0) errors.push('negative');
   return errors;
 }
 
@@ -38,27 +54,30 @@ export function buildPhases(input) {
   const c = mergeIntervalConfig(input);
   const phases = [];
   const sets = c.sets; const rounds = c.rounds; const exCount = c.exercises.length;
-  if (c.warmup > 0) phases.push({ type: 'warmup', dur: c.warmup, label: '', set: 0, sets, round: 0, rounds, rep: 0, reps: c.reps, exIdx: -1, exCount });
+  if (c.start > 0) phases.push({ type: 'start', dur: c.start, label: '', set: 0, sets, round: 0, rounds, rep: 0, reps: c.reps, exIdx: -1, exCount });
   for (let s = 1; s <= sets; s++) {
     for (let r = 1; r <= rounds; r++) {
       for (let e = 0; e < exCount; e++) {
         const ex = c.exercises[e];
         for (let k = 1; k <= c.reps; k++) {
-          const base = { label: '', set: s, sets, round: r, rounds, rep: k, reps: c.reps, exIdx: e, exCount };
+          const base = { label: ex.name, set: s, sets, round: r, rounds, rep: k, reps: c.reps, exIdx: e, exCount };
           phases.push({ type: 'work', dur: ex.work, ...base });
+          const nextName = c.exercises[(e + 1) % exCount].name;
           const lastUnitOfRound = e === exCount - 1 && k === c.reps;
           const lastRound = r === rounds;
           const lastSet = s === sets;
           if (lastUnitOfRound && lastRound) {
-            if (!lastSet && c.setRest > 0) phases.push({ type: 'setrest', dur: c.setRest, ...base });
+            if (!lastSet && c.setRest > 0) phases.push({ type: 'setrest', dur: c.setRest, ...base, label: c.exercises[0].name });
           } else {
-            if (ex.rest > 0) phases.push({ type: 'rest', dur: ex.rest, ...base });
-            if (lastUnitOfRound && c.roundRest > 0) phases.push({ type: 'extra', dur: c.roundRest, ...base });
+            if (ex.rest > 0) phases.push({ type: 'rest', dur: ex.rest, ...base, label: nextName });
+            
           }
         }
       }
     }
   }
+  const lastWork = phases.findLastIndex((x) => x.type === 'work');
+  if (lastWork >= 0) phases[lastWork].finalWork = true; // dort kommt "Sore-made"
   if (c.cooldown > 0) phases.push({ type: 'cooldown', dur: c.cooldown, label: '', set: sets, sets, round: rounds, rounds, rep: c.reps, reps: c.reps, exIdx: -1, exCount });
   return phases;
 }
@@ -81,18 +100,15 @@ export class IntervalRunner {
   get phase() { return this.phases[this.i]; }
   totalMs() { return totalSeconds(this.phases) * 1000; }
   phaseElapsed() { return this.sw.elapsed(); }
-  isOpen() { return !!this.phase.open; }
-  // Bei offenen Phasen (ohne Zeitlimit) gibt es keine Restzeit; die Anzeige zählt aufwärts.
-  phaseRemaining() { return this.isOpen() ? Infinity : Math.max(0, this.phase.dur * 1000 - this.phaseElapsed()); }
+  phaseRemaining() { return Math.max(0, this.phase.dur * 1000 - this.phaseElapsed()); }
   // Zeit bis zum Ende der Sitzung (geplant), berücksichtigt Änderungen der Phasendauern
   totalRemaining() {
-    let ms = this.isOpen() ? 0 : this.phaseRemaining();
+    let ms = this.phaseRemaining();
     for (let k = this.i + 1; k < this.phases.length; k++) ms += this.phases[k].dur * 1000;
     return this.state === 'finished' ? 0 : ms;
   }
-  hasOpenAhead() { return this.phases.slice(this.i).some((p) => p.open); }
   // Aktive Trainingszeit (Pausen des Timers zählen nicht)
-  activeMs() { return this.state === 'finished' ? this.doneMs : this.doneMs + (this.isOpen() ? this.phaseElapsed() : Math.min(this.phaseElapsed(), this.phase.dur * 1000)); }
+  activeMs() { return this.state === 'finished' ? this.doneMs : this.doneMs + Math.min(this.phaseElapsed(), this.phase.dur * 1000); }
   wallMs() { return this.startedWall === null ? 0 : (this.endedWall ?? this.wall()) - this.startedWall; }
   pausedMs() { return Math.max(0, this.wallMs() - this.activeMs() + this.skippedMs); }
   progress() { return Math.min(1, (this.activeMs() + this.skippedMs) / Math.max(1, this.totalMs())); }
@@ -107,7 +123,7 @@ export class IntervalRunner {
   resume() { return this.state === 'paused' ? this.start() : []; }
 
   advance() {
-    const dur = this.phase.open ? this.phaseElapsed() : this.phase.dur * 1000;
+    const dur = this.phase.dur * 1000;
     this.doneMs += dur;
     if (this.i >= this.phases.length - 1) {
       this.state = 'finished'; this.sw.pause(); this.endedWall = this.wall();
@@ -121,7 +137,7 @@ export class IntervalRunner {
     const out = [];
     if (this.state !== 'running') return out;
     let guard = 0;
-    while (this.state === 'running' && !this.isOpen() && this.phaseElapsed() >= this.phase.dur * 1000 && guard++ < 10000) {
+    while (this.state === 'running' && this.phaseElapsed() >= this.phase.dur * 1000 && guard++ < 10000) {
       const carry = this.phaseElapsed() - this.phase.dur * 1000; // Übertrag nach verspätetem Tick
       const ev = this.advance();
       out.push(ev);
@@ -134,7 +150,7 @@ export class IntervalRunner {
   // Weiter zur nächsten Phase (übersprungene Restzeit wird nicht als aktive Zeit gezählt)
   skip() {
     if (this.state === 'finished') return [];
-    const rest = this.isOpen() ? 0 : this.phaseRemaining();
+    const rest = this.phaseRemaining();
     this.skippedMs += rest;
     this.doneMs += this.phaseElapsed();
     const wasRunning = this.state === 'running';
@@ -149,9 +165,17 @@ export class IntervalRunner {
     const wasRunning = this.state === 'running';
     if (this.phaseElapsed() > 2000 || this.i === 0) { this.sw.reset(); if (wasRunning) this.sw.start(); }
     else {
-      this.i -= 1; this.doneMs = Math.max(0, this.doneMs - (this.phase.open ? 0 : this.phase.dur * 1000));
+      this.i -= 1; this.doneMs = Math.max(0, this.doneMs - this.phase.dur * 1000);
       this.sw.reset(); if (wasRunning) this.sw.start();
     }
+    return [{ type: 'phaseStart', phase: this.phase, index: this.i, back: true }];
+  }
+
+  // Laufende Phase von vorn beginnen
+  restartPhase() {
+    if (this.state === 'finished') return [];
+    const wasRunning = this.state === 'running';
+    this.sw.reset(); if (wasRunning) this.sw.start();
     return [{ type: 'phaseStart', phase: this.phase, index: this.i, back: true }];
   }
 
@@ -162,7 +186,6 @@ export class IntervalRunner {
   // Dauer der laufenden Phase ändern (+/-); alle Gesamtzeiten passen sich automatisch an
   adjustCurrent(deltaSec) {
     const ph = this.phase;
-    if (ph.open) return [];
     ph.dur = Math.max(1, ph.dur + deltaSec);
     return [{ type: 'adjust' }];
   }
@@ -183,18 +206,19 @@ export class IntervalRunner {
   // Ereignisse für den Ton-Planer (Zeit ab jetzt in ms). Gilt nur, solange der Zustand unverändert bleibt.
   upcomingCues(horizonMs = 60000) {
     const cues = [];
-    if (this.state !== 'running' || this.isOpen()) return cues;
+    if (this.state !== 'running') return cues;
     let t = 0; let k = this.i;
     let rem = this.phaseRemaining();
     while (k < this.phases.length && t <= horizonMs) {
       const ph = this.phases[k];
-      if (ph.open) break; // ab hier entscheidet der Trainer
       const phaseMs = ph.dur * 1000;
-      for (const s of ph.quiet ? [] : this.countdown) {
-        if (phaseMs > s * 1000 && rem > s * 1000) cues.push({ in: t + rem - s * 1000, kind: 'countdown', sec: s, phase: ph.type });
+      // Countdown am Anfang eines Programms: jede Sekunde ein Piepton; sonst nur die gewählten Sekunden
+      const secs = ph.type === 'start' ? Array.from({ length: Math.ceil(ph.dur) - 1 }, (_, n) => n + 1) : this.countdown;
+      for (const s of secs) {
+        if (phaseMs > s * 1000 && rem > s * 1000) cues.push({ in: t + rem - s * 1000, kind: 'countdown', sec: s, every: ph.type === 'start', phase: ph.type });
       }
       const next = this.phases[k + 1];
-      cues.push({ in: t + rem, kind: next ? 'phase' : 'finish', phaseType: next ? next.type : null, label: next ? next.label : '', phaseIndex: k + 1, from: ph.type });
+      cues.push({ in: t + rem, kind: next ? 'phase' : 'finish', phaseType: next ? next.type : null, label: next ? next.label : '', phaseIndex: k + 1, from: ph.type, finalWork: !!ph.finalWork });
       t += rem;
       k += 1;
       rem = this.phases[k] ? this.phases[k].dur * 1000 : 0;
@@ -206,7 +230,7 @@ export class IntervalRunner {
     const ph = this.phase;
     return {
       state: this.state, index: this.i, count: this.phases.length, phase: ph,
-      phaseRemainingMs: this.phaseRemaining(), phaseMs: ph.dur * 1000, phaseElapsedMs: this.phaseElapsed(), open: !!ph.open, hasOpenAhead: this.hasOpenAhead(),
+      phaseRemainingMs: this.phaseRemaining(), phaseMs: ph.dur * 1000, phaseElapsedMs: this.phaseElapsed(),
       totalRemainingMs: this.totalRemaining(), plannedMs: this.totalMs(),
       activeMs: this.activeMs(), wallMs: this.wallMs(), pausedMs: this.pausedMs(), progress: this.progress()
     };

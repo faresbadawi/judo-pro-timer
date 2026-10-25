@@ -36,6 +36,7 @@ const P = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   trash: '<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7M10 11v5M14 11v5"/>',
   edit: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3ZM14 8l3 3"/>',
+  dup: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
   copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2.2"/><path d="M15.5 8.5V6.7A2.2 2.2 0 0 0 13.3 4.5H6.7A2.2 2.2 0 0 0 4.5 6.7v6.6a2.2 2.2 0 0 0 2.2 2.2h1.8"/>',
   grip: '<circle cx="9" cy="6" r="1.3" fill="currentColor"/><circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="9" cy="12" r="1.3" fill="currentColor"/><circle cx="15" cy="12" r="1.3" fill="currentColor"/><circle cx="9" cy="18" r="1.3" fill="currentColor"/><circle cx="15" cy="18" r="1.3" fill="currentColor"/>',
   up: '<path d="M6 14l6-6 6 6"/>',
@@ -44,9 +45,10 @@ const P = {
   timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4M9.5 3h5M12 3v3M18.2 7l1.3-1.3"/>',
   belt: '<path d="M3 9.5l9 2.5 9-2.5v5l-9 2.5-9-2.5v-5Z"/><path d="M10.5 12l-2 8M13.5 12l2 8"/>',
   bolt: '<path d="M13 3 5.5 13.5H11L10 21l7.5-10.5H12L13 3Z"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   history: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5M4 4.5V8h3.5M12 8v4.2l2.8 1.6"/>',
   repeat: '<path d="M4 11V9a3 3 0 0 1 3-3h11M15 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H6M9 21l-3-3 3-3"/>',
+  replay: '<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4 4.5V8.5h4"/><path d="M10.5 9v6l4.8-3-4.8-3Z" fill="currentColor" stroke="none"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   volume: '<path d="M5 9.5h3l4-3.5v12l-4-3.5H5v-5ZM15.5 9a4 4 0 0 1 0 6M18 6.8a7 7 0 0 1 0 10.4"/>',
   hourglass: '<path d="M7 3.5h10M7 20.5h10M8 3.5c0 4 4 5 4 8.5s-4 4.5-4 8.5M16 3.5c0 4-4 5-4 8.5s4 4.5 4 8.5"/>',
@@ -81,8 +83,8 @@ export const fmtDur = (sec) => {
   const m = Math.floor(sec / 60); const s = sec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 };
-// "4:30", "270" (Sekunden, wenn > 99), "4" (Minuten) -> Sekunden
-export function parseDur(text) {
+// "4:30", "270" (Sekunden, wenn > 99), "4" (Minuten) -> Sekunden. Mit bare = 'sec' sind einfache Zahlen immer Sekunden.
+export function parseDur(text, bare = 'min') {
   const x = String(text).trim().replace(',', '.');
   if (!x) return null;
   if (x.includes(':')) {
@@ -92,7 +94,7 @@ export function parseDur(text) {
   }
   const n = parseFloat(x);
   if (!Number.isFinite(n)) return null;
-  return n > 99 ? Math.round(n) : Math.round(n * 60);
+  return bare === 'sec' || n > 99 ? Math.round(n) : Math.round(n * 60);
 }
 export const fmtLong = (ms) => {
   const t = formatElapsed(ms);
@@ -110,17 +112,61 @@ export const humanDur = (sec) => {
 
 /* ---------- Bedienelemente ---------- */
 
-// Zeitfeld mit − und +: Mitte ist ein Eingabefeld (m:ss)
-export function durationField({ value, onChange, min = 0, max = 5999, step = 15, label = '' }) {
-  const input = h('input', { type: 'text', inputmode: 'numeric', class: 'dur-input', 'aria-label': label, value: fmtDur(value) });
+/* ---------- Schlaue Zahlentastatur ---------- */
+
+// Öffnet von unten eine Tastatur nur für Zeiten oder Zahlen (kein Handy-Keyboard nötig).
+// Zeit: Ziffern füllen von rechts wie bei der Mikrowelle (1, 5, 0 → 1:50), dazu Schnellwerte und "+5 s / +10 s / +30 s / +1 min".
+// Auch mit der normalen Tastatur bedienbar: Ziffern, Rücktaste, Enter = fertig.
+export function openKeypad({ title, value, kind = 'time', min = 0, max = 5999, quick = [], unit = '', onDone }) {
+  const time = kind === 'time';
+  let cur = value; let buf = null;
+  const digitsOf = (n) => (n <= 0 ? '' : time ? String(Math.floor(n / 60) * 100 + (n % 60)) : String(n));
+  const fromDigits = (d) => { const n = parseInt(d || '0', 10); return time ? Math.floor(n / 100) * 60 + (n % 100) : n; };
+  const maxLen = time ? 4 : String(max).length;
+  const shown = h('div', { class: 'kp-value', role: 'status', 'aria-live': 'polite' });
+  const show = () => { shown.textContent = time ? fmtDur(cur) : `${cur}${unit}`; };
+  const press = (d) => { buf = (((buf ?? '') + d).replace(/^0+/, '')).slice(-maxLen); cur = fromDigits(buf); show(); };
+  const back = () => { buf = (buf ?? digitsOf(cur)).slice(0, -1); cur = fromDigits(buf); show(); };
+  const clear = () => { buf = ''; cur = 0; show(); };
+  const setTo = (n) => { buf = null; cur = n; show(); };
+  const key = (label, fn, cls = '') => h('button', { type: 'button', class: 'kp-key ' + cls, onclick: fn }, label);
+  const keys = h('div', { class: 'kp-keys' },
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => key(d, () => press(d))),
+    key('C', clear, 'alt'), key('0', () => press('0')), key(icon('back'), back, 'alt'));
+  keys.lastChild.setAttribute('aria-label', '⌫');
+  const adds = time ? h('div', { class: 'kp-adds' }, [[1, '+1 s'], [5, '+5 s'], [10, '+10 s'], [30, '+30 s'], [60, '+1 min']].map(([n, l]) =>
+    h('button', { type: 'button', class: 'chip', onclick: () => setTo(Math.min(max, cur + n)) }, num(l)))) : null;
+  const chips = quick.length ? h('div', { class: 'kp-quick' }, quick.map((n) =>
+    h('button', { type: 'button', class: 'chip', onclick: () => setTo(n) }, num(time ? fmtDur(n) : `${n}${unit}`)))) : null;
+  const done = () => { sheet.close(); onDone(Math.min(max, Math.max(min, cur))); };
+  const sheet = openSheet({
+    title,
+    body: [shown, chips, adds, keys],
+    foot: [h('button', { class: 'btn', type: 'button', onclick: () => sheet.close() }, t('common.cancel')),
+      h('button', { class: 'btn primary', type: 'button', onclick: done }, icon('check'), t('common.ok'))]
+  });
+  sheet.dlg.classList.add('keypad');
+  sheet.dlg.addEventListener('keydown', (e) => {
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); press(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); back(); }
+    else if (e.key === 'Enter') { e.preventDefault(); done(); }
+  });
+  show();
+  return sheet;
+}
+
+/* ---------- Bedienelemente ---------- */
+
+// Zeitfeld mit − und +: Tippen auf die Zeit öffnet die Zahlentastatur. − und + gehen in 5-s-Schritten (fixedStep ändert das).
+export function durationField({ value, onChange, min = 0, max = 5999, fixedStep = 5, label = '', quick = QUICK_TIMES }) {
+  const input = h('button', { type: 'button', class: 'dur-input', 'aria-label': label, title: label }, fmtDur(value));
   let v = value;
-  const set = (n, notify = true) => { v = Math.min(max, Math.max(min, n)); input.value = fmtDur(v); if (notify) onChange(v); };
-  input.addEventListener('change', () => { const p = parseDur(input.value); set(p == null ? v : p); });
-  input.addEventListener('focus', () => input.select());
+  const set = (n, notify = true) => { v = Math.min(max, Math.max(min, n)); input.textContent = fmtDur(v); if (notify) onChange(v); };
+  input.addEventListener('click', () => openKeypad({ title: label, value: v, min, max, quick, onDone: (n) => set(n) }));
   const repeatBtn = (delta, ic, aria) => {
     let timer = null; let count = 0;
     const stop = () => { clearTimeout(timer); timer = null; };
-    const go = () => { set(v + delta * step * (count > 8 ? 4 : 1)); count++; timer = setTimeout(go, count > 3 ? 90 : 350); };
+    const go = () => { set(v + delta * fixedStep * (count > 8 ? 4 : 1)); count++; timer = setTimeout(go, count > 3 ? 90 : 350); };
     const b = h('button', { type: 'button', 'aria-label': aria }, icon(ic));
     b.addEventListener('pointerdown', (e) => { e.preventDefault(); count = 0; go(); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => b.addEventListener(ev, stop));
@@ -128,12 +174,15 @@ export function durationField({ value, onChange, min = 0, max = 5999, step = 15,
   };
   return h('div', { class: 'durfield' }, repeatBtn(-1, 'minus', '−'), input, repeatBtn(1, 'plus', '+'));
 }
+const QUICK_TIMES = [15, 30, 45, 60, 120, 180, 240, 300];
 
-export function counter({ value, min = 1, max = 99, step = 1, unit = '', onChange, label = '' }) {
-  const out = h('output', {});
+// Zähler mit − und +; Tippen auf die Zahl öffnet die Zahlentastatur
+export function counter({ value, min = 1, max = 99, step = 1, unit = '', onChange, label = '', quick = [1, 2, 3, 4, 5, 6, 8, 10, 12] }) {
+  const out = h('button', { type: 'button', class: 'count-out', 'aria-label': label, title: label });
   let v = value;
   const show = () => { out.textContent = v + unit; };
   const set = (d) => { v = Math.min(max, Math.max(min, v + d * step)); show(); onChange(v); };
+  out.addEventListener('click', () => openKeypad({ title: label, value: v, kind: 'count', min, max, quick: quick.filter((n) => n >= min && n <= max), onDone: (n) => { v = n; show(); onChange(v); } }));
   show();
   return h('div', { class: 'counter', role: 'group', 'aria-label': label },
     h('button', { type: 'button', 'aria-label': '−', onclick: () => set(-1) }, icon('minus')), out,
