@@ -150,6 +150,7 @@ const SFX = {
   none: () => 0,
   start: (t, v = 1) => beep(t, 1320, 0.55, 0.36 * v),                                   // langer, heller Startton
   beep: (t, v = 1) => beep(t, 880, 0.14, 0.34 * v),                                      // kurzer Piepton
+  beepHigh: (t, v = 1) => beep(t, 1175, 0.16, 0.36 * v),                                 // höherer Piepton (letzte 3 Sekunden des Start-Countdowns)
   beep2: (t, v = 1) => { beep(t, 880, 0.1, 0.32 * v); beep(t + 0.17, 880, 0.1, 0.32 * v); return 0.3; }, // Doppel-Piep
   // Warntöne für die letzten Sekunden VOR dem Ende eines Abschnitts (sec = verbleibende Sekunden): klingen anders als die Start-Pieptöne
   warn: (t, v = 1, sec = 1) => { // steigende Tonhöhe: 3 -> 2 -> 1, davor (5, 10) tiefer und leiser
@@ -290,8 +291,10 @@ export function schedule(cues) {
     if (c.kind === 'countdown') {
       if (c.every) {
         // Start-Countdown am Anfang: jede Sekunde ein Pieps, die letzten drei lauter
-        const snd = mode === 'hiit' ? S.hiitCount : S.judoCount;
-        play(snd, t, c.sec <= 3 ? 1.8 : 0.6);
+        // Die letzten drei Sekunden (3, 2, 1) klingen höher und lauter als die davor
+        const base = mode === 'hiit' ? S.hiitCount : S.judoCount;
+        const last3 = c.sec <= 3;
+        play(last3 && base === 'beep' ? 'beepHigh' : base, t, last3 ? 1.8 : 0.6);
       } else if (S.countdown && S.countdownList.includes(c.sec)) {
         // Vor dem Ende eines Abschnitts: eigener Warnton (anders als beim Start), die letzten drei lauter
         const snd = (mode === 'hiit' ? S.hiitEndCount : S.judoEndCount) || 'warn';

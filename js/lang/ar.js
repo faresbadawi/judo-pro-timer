@@ -54,7 +54,7 @@ export default {
   'phase.setrest': 'راحة المجموعة', 'phase.cooldown': 'تهدئة',
   'run.ready': 'جاهز', 'run.finished': 'انتهى', 'run.upNext': 'التالي', 'run.last': 'آخر مرحلة',
   'run.step': 'الخطوة {a}/{b}', 'run.set': 'المجموعة {a}/{b}', 'run.round': 'الجولة {a}/{b}', 'run.repeat': 'المرة {a}/{b}', 'run.rep': 'التكرار {a}/{b}',
-  'run.remaining': 'المتبقي كليًا', 'run.active': 'الوقت الفعلي', 'run.paused': 'وقت الإيقاف', 'run.planned': 'المخطط',
+  'run.remaining': 'المتبقي', 'run.duration': 'المدة', 'run.active': 'الوقت الفعلي', 'run.paused': 'وقت الإيقاف', 'run.planned': 'المخطط',
   'run.pause': 'إيقاف مؤقت', 'run.resume': 'متابعة', 'run.again': 'مرة أخرى', 'run.prev': 'السابق', 'run.next': 'الانتقال للمرحلة التالية',
   'run.addRest': '+30 ث راحة', 'run.fullscreen': 'ملء الشاشة', 'run.minimize': 'العودة للقائمة (يستمر المؤقت)',
   'run.restartPhase': 'إعادة هذا الجزء', 'run.lastOne': 'الجولة الأخيرة – أعطِ كل ما عندك!', 'run.cheer': 'أحسنت! نراك في التدريب القادم.', 'set.applause': 'تصفيق في النهاية', 'set.applauseHint': 'يصفّق الجمهور بعد آخر قسم',

@@ -52,7 +52,7 @@ export default {
   'phase.setrest': 'Set-Pause', 'phase.cooldown': 'Cooldown',
   'run.ready': 'Bereit', 'run.finished': 'Geschafft', 'run.upNext': 'Danach', 'run.last': 'Letzter Abschnitt',
   'run.step': 'Schritt {a}/{b}', 'run.set': 'Set {a}/{b}', 'run.round': 'Runde {a}/{b}', 'run.repeat': 'Durchgang {a}/{b}', 'run.rep': 'Wdh. {a}/{b}',
-  'run.remaining': 'Gesamt verbleibend', 'run.active': 'Aktive Zeit', 'run.paused': 'Pausiert', 'run.planned': 'Geplant',
+  'run.remaining': 'Verbleibend', 'run.duration': 'Dauer', 'run.active': 'Aktive Zeit', 'run.paused': 'Pausiert', 'run.planned': 'Geplant',
   'run.pause': 'Anhalten', 'run.resume': 'Weiter', 'run.again': 'Nochmal', 'run.prev': 'Zurück', 'run.next': 'Weiter zum nächsten Abschnitt',
   'run.addRest': '+30 s Pause', 'run.fullscreen': 'Vollbild', 'run.minimize': 'Zur Übersicht (läuft weiter)',
   'run.restartPhase': 'Übung wiederholen', 'run.lastOne': 'Letzte Runde – gib alles!', 'run.cheer': 'Stark gemacht! Bis zum nächsten Training.', 'set.applause': 'Applaus am Ende', 'set.applauseHint': 'Nach dem letzten Abschnitt klatscht das Publikum',

@@ -342,7 +342,7 @@ export function runView() {
       mk('ring-track'); const prog = mk('ring-prog'); prog.setAttribute('stroke-dasharray', RING_LEN); prog.setAttribute('stroke-dashoffset', RING_LEN);
       return { svg, prog };
     })(),
-    tTotal: h('b', {}), tActive: h('b', {}), tPaused: h('b', {}), tPlanned: h('b', {}),
+    tTotal: h('b', {}), tPlanned: h('b', {}),
     pauseBtn: h('button', { type: 'button', class: 'rbtn main' }), skipBtn: h('button', { type: 'button', class: 'rbtn' }), prevBtn: h('button', { type: 'button', class: 'rbtn' })
   };
   el.prevBtn.append(icon('prev', 'flip')); el.prevBtn.setAttribute('aria-label', t('run.prev')); el.prevBtn.onclick = () => sess.previous();
@@ -356,21 +356,25 @@ export function runView() {
     return `${t('run.upNext')}: ${name} · ${fmtDur(nx.dur)}`;
   };
 
-  // Leuchtende Punkte: ein Punkt je Übung/Randori. Erledigt = gefüllt, aktuell = leuchtet, kommend = Umriss
+  // Leuchtende Punkte: ein großer Punkt je Übung/Randori, ein kleiner je Pause.
+  // Erledigt = gefüllt, aktuell = leuchtet, kommend = Umriss
   let dotKey = '';
+  const isDotPhase = (p) => p.type === 'work' || p.type === 'rest' || p.type === 'extra' || p.type === 'setrest';
   const drawDots = (rr, s) => {
-    const work = rr.phases.map((p, i) => (p.type === 'work' ? i : -1)).filter((i) => i >= 0);
-    const key = work.join(',');
+    const idx = rr.phases.map((p, i) => (isDotPhase(p) ? i : -1)).filter((i) => i >= 0);
+    const workCount = idx.filter((i) => rr.phases[i].type === 'work').length;
+    const key = idx.map((i) => i + rr.phases[i].type[0]).join(',');
     if (key !== dotKey) {
       dotKey = key;
-      fill(el.dots, work.map((i) => h('i', { 'data-i': i })));
-      el.dots.classList.toggle('many', work.length > 18);
-      el.dots.hidden = work.length < 2;
+      fill(el.dots, idx.map((i) => h('i', { 'data-i': i, 'data-k': rr.phases[i].type === 'work' ? 'w' : 'p' })));
+      el.dots.classList.toggle('many', idx.length > 24);
+      el.dots.hidden = workCount < 2;
     }
+    const nextIdx = idx.find((i) => i > rr.i);   // der nächste Punkt nach dem aktuellen
     el.dots.querySelectorAll('i').forEach((d) => {
       const i = +d.dataset.i; const isCur = i === rr.i && s.state !== 'finished';
-      const nextUp = !isCur && i > rr.i && !rr.phases.slice(rr.i + 1, i).some((p) => p.type === 'work');
-      d.className = s.state === 'finished' || i < rr.i ? 'done' : isCur ? 'cur' : nextUp ? 'next' : '';
+      const kind = d.dataset.k === 'p' ? ' pause' : '';
+      d.className = (s.state === 'finished' || i < rr.i ? 'done' : isCur ? 'cur' : i === nextIdx ? 'next' : '') + kind;
     });
   };
 
@@ -399,8 +403,6 @@ export function runView() {
     el.bar.style.width = `${Math.round(s.progress * 100)}%`;
     el.next.textContent = s.state === 'finished' ? t('run.cheer') : describeNext();
     el.tTotal.textContent = formatClock(s.totalRemainingMs);
-    el.tActive.textContent = formatElapsed(s.activeMs);
-    el.tPaused.textContent = formatElapsed(s.pausedMs);
     el.tPlanned.textContent = formatClock(s.plannedMs);
     const playing = s.state === 'running';
     fill(el.pauseBtn, icon(s.state === 'finished' ? 'repeat' : playing ? 'pause' : 'play'));
@@ -427,9 +429,7 @@ export function runView() {
     h('div', { class: 'run-side' },
       h('div', { class: 'stats' },
         h('div', {}, h('small', {}, t('run.remaining')), el.tTotal),
-        h('div', {}, h('small', {}, t('run.active')), el.tActive),
-        h('div', {}, h('small', {}, t('run.paused')), el.tPaused),
-        h('div', {}, h('small', {}, t('run.planned')), el.tPlanned)),
+        h('div', {}, h('small', {}, t('run.duration')), el.tPlanned)),
       h('div', { class: 'run-controls' }, el.prevBtn, el.pauseBtn, el.skipBtn)));
   update();
   const off = sess.onSession((type) => { if (type === 'stop') return; update(); });

@@ -52,7 +52,7 @@ export default {
   'phase.setrest': 'Set break', 'phase.cooldown': 'Cool-down',
   'run.ready': 'Ready', 'run.finished': 'Done', 'run.upNext': 'Next', 'run.last': 'Last section',
   'run.step': 'Step {a}/{b}', 'run.set': 'Set {a}/{b}', 'run.round': 'Round {a}/{b}', 'run.repeat': 'Repeat {a}/{b}', 'run.rep': 'Rep {a}/{b}',
-  'run.remaining': 'Total remaining', 'run.active': 'Active time', 'run.paused': 'Paused', 'run.planned': 'Planned',
+  'run.remaining': 'Remaining', 'run.duration': 'Duration', 'run.active': 'Active time', 'run.paused': 'Paused', 'run.planned': 'Planned',
   'run.pause': 'Pause', 'run.resume': 'Resume', 'run.again': 'Again', 'run.prev': 'Back', 'run.next': 'Skip to next section',
   'run.addRest': '+30 s break', 'run.fullscreen': 'Fullscreen', 'run.minimize': 'Back to overview (keeps running)',
   'run.restartPhase': 'Repeat this section', 'run.lastOne': 'Last round – give it everything!', 'run.cheer': 'Well done! See you at the next session.', 'set.applause': 'Applause at the end', 'set.applauseHint': 'The crowd cheers after the last section',
