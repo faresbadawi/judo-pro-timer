@@ -163,6 +163,15 @@ const SFX = {
   chime: (t, v = 1) => { [[1, 1, 1.2], [2.76, 0.5, 0.8], [5.4, 0.25, 0.5]].forEach(([r, a, d]) => scheduled.push(partial(t, 1175 * r, 0.3 * a * v, d, 'sine', 0.25))); return 1.2; }, // helles Glöckchen
   // Applaus: viele kurze Klatscher, die zu einem Rauschen anschwellen und ausklingen
   applause: (t, v = 1) => {
+    if (applauseBuf) { // echte Aufnahme (audio/applause.mp3)
+      const g = ctx.createGain(); g.gain.value = 0.9 * v;
+      const src = ctx.createBufferSource(); src.buffer = applauseBuf;
+      src.connect(g).connect(master);
+      src.start(t);
+      scheduled.push({ src, at: t, end: t + applauseBuf.duration });
+      return applauseBuf.duration;
+    }
+    // Rückfall, falls die Datei fehlt: Applaus aus Rauschen und Klatschern
     const dur = 3.6;
     scheduled.push(noiseBurst(t, dur, 0.05 * v, 2600)); // Grundrauschen der Menge
     for (let i = 0; i < 70; i++) {
@@ -187,6 +196,18 @@ const play = (id, t, v = 1, sec) => (SFX[id] || SFX.none)(t, v, sec);
 const KEYS = ['start', 'stop', 'rest', 'ready', 'switch', 'finish'];
 const decoded = new Map(); // "ordner/name" -> AudioBuffer | null
 
+// Applaus-Aufnahme: wird vor dem Start der Sitzung geladen und dekodiert
+let applauseBuf = null;
+let applauseTried = false;
+async function loadApplause() {
+  if (applauseBuf || applauseTried || !ctx) return;
+  applauseTried = true;
+  try {
+    const r = await fetch('audio/applause.mp3');
+    if (r.ok) applauseBuf = await ctx.decodeAudioData(await r.arrayBuffer());
+  } catch { applauseBuf = null; }
+}
+
 function voiceDir(force = false) {
   const v = settings().voiceStyle;
   if (v === 'off' || (mode === 'hiit' && !force)) return null;
@@ -205,6 +226,7 @@ async function fetchClip(dir, key) {
 }
 // Vor dem Start einer Sitzung aufrufen: lädt und dekodiert alle Clips des gewählten Stils
 export async function prepare() {
+  await loadApplause();
   const dir = voiceDir();
   if (!dir || !ctx) return;
   await Promise.all(KEYS.map((k) => fetchClip(dir, k)));
@@ -318,6 +340,7 @@ export function playNow(from, to, delay = 0.02, finalWork = false) {
 export function previewSound(id, v = 1) {
   unlock();
   if (!ctx) return;
+  if (id === 'applause' && !applauseBuf && !applauseTried) { loadApplause().then(() => play(id, ctx.currentTime + 0.05, v)); return; }
   play(id, ctx.currentTime + 0.05, v);
 }
 export const previewBell = () => previewSound(settings().bell);
