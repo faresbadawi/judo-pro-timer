@@ -19,11 +19,11 @@ export const DEFAULT_SETTINGS = {
   hiitEnd: 'dong',         // HIIT: Ende einer Übung (Pause beginnt)
   hiitFinish: 'gong',      // HIIT: Ende des Trainings
   hiitCount: 'beep',       // HIIT: Piepton im Countdown
-  judoEndCount: 'warn',    // Warnton in den letzten Sekunden vor dem Ende eines Abschnitts (Judo)
-  hiitEndCount: 'warn',    // dasselbe für HIIT
+  judoEndCount: 'beep',    // Ton in den letzten Sekunden vor dem Ende eines Abschnitts (Judo)
+  hiitEndCount: 'beep',    // dasselbe für HIIT
   endOrder: 'voice-bell',  // 'bell-voice' | 'voice-bell' | 'bell' | 'voice'
   countdown: true,
-  countdownList: [10, 5, 3, 2, 1],
+  countdownList: [3, 2, 1],   // Piepen nur in den letzten drei Sekunden
   applause: true,          // Applaus am Ende des Trainings
   vibrate: true,
   keepAwake: true,
@@ -32,7 +32,8 @@ export const DEFAULT_SETTINGS = {
   v4: true,
   v5: true,
   v6: true,
-  v7: true
+  v7: true,
+  v8: true
 };
 
 export const newId = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
@@ -102,6 +103,13 @@ export function init() {
   if (s.settings && !s.settings.v7) {
     state.items = state.items.filter((it) => it.nameKey || ((it.name || '').trim() && !/^(ohne namen|untitled|بدون اسم)$/i.test(it.name.trim())));
     state.settings.v7 = true; upgraded = true;
+  }
+  // Version 8: Piepen nur in den letzten drei Sekunden vor dem Ende eines Abschnitts, mit ganz normalem Piepton
+  if (s.settings && !s.settings.v8) {
+    state.settings.countdownList = [3, 2, 1];
+    state.settings.judoEndCount = 'beep';
+    state.settings.hiitEndCount = 'beep';
+    state.settings.v8 = true; upgraded = true;
   }
   // Ältere Programme (Schritte mit "Pause danach") in Blöcke umwandeln, HIIT-Übungsnamen entfernen
   let migrated = false;
