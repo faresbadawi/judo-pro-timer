@@ -51,7 +51,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
 :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-.page { max-width: 720px; margin: 0 auto; padding: calc(16px + var(--safe-t)) 16px calc(28px + var(--safe-b)); animation: pageIn .28s ease; }
+.page { max-width: 720px; margin: 0 auto; padding: calc(24px + var(--safe-t)) 16px calc(28px + var(--safe-b)); animation: pageIn .28s ease; }
 @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } }
 
 /* ===== Bausteine ===== */
@@ -145,7 +145,7 @@ input[type=range] { width: 150px; accent-color: var(--accent); }
 .fld label { display: block; font-size: .78rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
 .open-tag { display: flex; align-items: center; gap: 8px; color: var(--warm); font-weight: 700; padding: 11px 4px; }
 .step-open { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-weight: 600; }
-.sticky-bar { position: fixed; inset-inline: 0; bottom: 0; z-index: 5; padding: 10px 16px calc(10px + var(--safe-b)); background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+.sticky-bar { position: fixed; inset-inline: 0; bottom: 0; z-index: 5; padding: 10px 16px calc(10px + var(--safe-b)); background: var(--bg); border-top: 1px solid var(--line); }
 .sticky-bar > * { max-width: 720px; margin-inline: auto; }
 .sumline { display: flex; justify-content: space-between; margin-bottom: 10px; }
 .sumline small { display: block; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
@@ -243,8 +243,8 @@ dialog.sheet.closing { animation: sheetOut .18s ease-in forwards; }
 .bar-actions { display: flex; gap: 8px; }
 .tabbar {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 8; display: flex; justify-content: center; gap: 10px;
-  padding: 8px 14px calc(10px + var(--safe-b)); background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+  padding: 8px 14px calc(10px + var(--safe-b)); background: var(--bg);
+  border-top: 1px solid var(--line);
 }
 .tab {
   flex: 1; max-width: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;

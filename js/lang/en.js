@@ -74,7 +74,7 @@ export default {
   'set.judoSounds': 'Judo timer', 'set.judoSoundsHint': 'With commands: Hajime at the start, Mate at the end, Sore-made at the very end.',
   'set.judoStart': 'Start of randori / exercise', 'set.judoStartHint': 'Quiet tone under the Hajime',
   'set.judoEnd': 'End of randori / exercise', 'set.judoEndHint': 'Sound together with the Mate',
-  'set.countSound': 'Countdown beep',
+  'set.countSound': 'Start countdown beep', 'set.endCountSound': 'Warning before the end', 'set.endCountHint': 'The last seconds of a section (see countdown beeps), different from the start', 'snd.warn': 'Warning (rising)', 'snd.warn2': 'Warning (low)',
   'set.hiitSounds': 'HIIT timer', 'set.hiitSoundsHint': 'General timer: sounds only, no commands.',
   'set.hiitStart': 'Start of an exercise', 'set.hiitStartHint': 'Go',
   'set.hiitEnd': 'End of an exercise', 'set.hiitEndHint': 'The break begins',

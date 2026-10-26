@@ -74,7 +74,7 @@ export default {
   'set.judoSounds': 'Judo-Timer', 'set.judoSoundsHint': 'Mit Kommandos: Hajime am Anfang, Mate am Ende, Sore-made am Schluss.',
   'set.judoStart': 'Beginn Randori / Übung', 'set.judoStartHint': 'Leiser Ton unter dem Hajime',
   'set.judoEnd': 'Ende Randori / Übung', 'set.judoEndHint': 'Ton zusammen mit dem Mate',
-  'set.countSound': 'Piepton im Countdown',
+  'set.countSound': 'Piepton im Start-Countdown', 'set.endCountSound': 'Warnton vor dem Ende', 'set.endCountHint': 'Die letzten Sekunden eines Abschnitts (siehe Countdown-Pieptöne), anders als beim Start', 'snd.warn': 'Warnton (steigend)', 'snd.warn2': 'Warnton (tief)',
   'set.hiitSounds': 'HIIT-Timer', 'set.hiitSoundsHint': 'Allgemeiner Timer: nur Töne, keine Kommandos.',
   'set.hiitStart': 'Beginn einer Übung', 'set.hiitStartHint': 'Los geht\'s',
   'set.hiitEnd': 'Ende einer Übung', 'set.hiitEndHint': 'Die Pause beginnt',

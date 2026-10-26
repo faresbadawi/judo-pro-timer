@@ -124,8 +124,24 @@ const BELLS = {
   }
 };
 
+// Pieps mit kurzem Haltebereich: bleibt über die ganze Dauer hörbar (auch über Lautsprecher von Handy und iPad)
+function tone(t, f, dur, vol, type = 'sine') {
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  const v = Math.max(0.0002, vol);
+  osc.type = type;
+  osc.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(v, t + 0.006);
+  g.gain.setValueAtTime(v, t + dur * 0.7);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g).connect(master);
+  osc.start(t); osc.stop(t + dur + 0.03);
+  scheduled.push({ src: osc, at: t, end: t + dur });
+}
+
 function beep(t, f = 880, dur = 0.12, vol = 0.32) {
-  scheduled.push(partial(t, f, vol, dur, 'sine', 0.08));
+  tone(t, f, dur, vol);
   return dur;
 }
 
@@ -135,6 +151,13 @@ const SFX = {
   start: (t, v = 1) => beep(t, 1320, 0.55, 0.36 * v),                                   // langer, heller Startton
   beep: (t, v = 1) => beep(t, 880, 0.14, 0.34 * v),                                      // kurzer Piepton
   beep2: (t, v = 1) => { beep(t, 880, 0.1, 0.32 * v); beep(t + 0.17, 880, 0.1, 0.32 * v); return 0.3; }, // Doppel-Piep
+  // Warntöne für die letzten Sekunden VOR dem Ende eines Abschnitts (sec = verbleibende Sekunden): klingen anders als die Start-Pieptöne
+  warn: (t, v = 1, sec = 1) => { // steigende Tonhöhe: 3 -> 2 -> 1, davor (5, 10) tiefer und leiser
+    const f = sec >= 4 ? 784 : sec === 3 ? 1047 : sec === 2 ? 1175 : 1319;
+    tone(t, f, sec <= 3 ? 0.26 : 0.18, (sec <= 3 ? 0.42 : 0.3) * v, 'triangle');
+    return 0.26;
+  },
+  warn2: (t, v = 1, sec = 1) => { tone(t, sec <= 3 ? 622 : 466, 0.24, 0.22 * v, 'square'); return 0.24; }, // tiefer, summender Warnton
   tick: (t, v = 1) => { scheduled.push(partial(t, 2300, 0.3 * v, 0.05, 'square', 0)); return 0.05; },       // kurzes Klacken
   chime: (t, v = 1) => { [[1, 1, 1.2], [2.76, 0.5, 0.8], [5.4, 0.25, 0.5]].forEach(([r, a, d]) => scheduled.push(partial(t, 1175 * r, 0.3 * a * v, d, 'sine', 0.25))); return 1.2; }, // helles Glöckchen
   // Applaus: viele kurze Klatscher, die zu einem Rauschen anschwellen und ausklingen
@@ -151,10 +174,11 @@ const SFX = {
   ...BELLS
 };
 export const SOUND_IDS = ['start', 'beep', 'beep2', 'tick', 'chime', 'dong', 'temple', 'gong', 'whistle', 'horn', 'boxing', 'buzzer', 'none'];
-export const COUNT_IDS = ['beep', 'beep2', 'tick', 'chime'];
+export const COUNT_IDS = ['beep', 'beep2', 'tick', 'chime'];            // Start-Countdown (jede Sekunde)
+export const END_COUNT_IDS = ['warn', 'warn2', 'beep2', 'chime', 'tick']; // Countdown vor dem Ende eines Abschnitts
 let mode = 'judo'; // 'judo' = mit Judo-Ansagen, 'hiit' = nur Töne
 export const setMode = (m) => { mode = m === 'hiit' ? 'hiit' : 'judo'; };
-const play = (id, t, v = 1) => (SFX[id] || SFX.none)(t, v);
+const play = (id, t, v = 1, sec) => (SFX[id] || SFX.none)(t, v, sec);
 
 /* ---------- Sprachclips ---------- */
 
@@ -264,11 +288,15 @@ export function schedule(cues) {
   for (const c of cues) {
     const t = base + c.in / 1000;
     if (c.kind === 'countdown') {
-      // Die letzten drei Sekunden sind lauter
-      const loud = c.sec <= 3;
-      const snd = mode === 'hiit' ? S.hiitCount : S.judoCount;
-      if (c.every) play(snd, t, loud ? 1.8 : 0.6);
-      else if (S.countdown && S.countdownList.includes(c.sec)) play(snd, t, loud ? 1.6 : 1);
+      if (c.every) {
+        // Start-Countdown am Anfang: jede Sekunde ein Pieps, die letzten drei lauter
+        const snd = mode === 'hiit' ? S.hiitCount : S.judoCount;
+        play(snd, t, c.sec <= 3 ? 1.8 : 0.6);
+      } else if (S.countdown && S.countdownList.includes(c.sec)) {
+        // Vor dem Ende eines Abschnitts: eigener Warnton (anders als beim Start), die letzten drei lauter
+        const snd = (mode === 'hiit' ? S.hiitEndCount : S.judoEndCount) || 'warn';
+        play(snd, t, c.sec <= 3 ? 1.4 : 0.8, c.sec);
+      }
     } else if (c.kind === 'phase') {
       playTransition(t, c.from, c.phaseType, c.finalWork);
     } else if (c.kind === 'finish') {

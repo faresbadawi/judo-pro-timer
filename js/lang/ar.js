@@ -76,7 +76,7 @@ export default {
   'set.judoSounds': 'مؤقّت الجودو', 'set.judoSoundsHint': 'مع الأوامر: هاجيمي في البداية وماته في النهاية.',
   'set.judoStart': 'بداية الراندوري / التمرين', 'set.judoStartHint': 'نغمة هادئة تحت هاجيمي',
   'set.judoEnd': 'نهاية الراندوري / التمرين', 'set.judoEndHint': 'صوت مع ماته',
-  'set.countSound': 'صفير العدّ التنازلي',
+  'set.countSound': 'صفير العدّ التنازلي للبداية', 'set.endCountSound': 'نغمة التحذير قبل النهاية', 'set.endCountHint': 'الثواني الأخيرة من المرحلة، تختلف عن نغمة البداية', 'snd.warn': 'تحذير (تصاعدي)', 'snd.warn2': 'تحذير (منخفض)',
   'set.hiitSounds': 'مؤقّت HIIT', 'set.hiitSoundsHint': 'مؤقّت عام: أصوات فقط بلا أوامر.',
   'set.hiitStart': 'بداية التمرين', 'set.hiitStartHint': 'انطلق',
   'set.hiitEnd': 'نهاية التمرين', 'set.hiitEndHint': 'تبدأ الراحة',

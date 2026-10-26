@@ -136,3 +136,14 @@ test('Countdown am Anfang: Piepton jede Sekunde, Sore-made nur am letzten Randor
   const last = r.upcomingCues(60000).find((x) => x.kind === 'phase' && x.from === 'work');
   assert.equal(last.finalWork, true); assert.equal(last.phaseType, 'cooldown');
 });
+
+test('Ende-Countdown: 3, 2, 1 Sekunden vor dem Ende jeder Arbeits- und Pausenphase (HIIT), nicht "every"', () => {
+  const c = fakeClock();
+  const r = runner(buildPhases({ start: 0, cooldown: 0, sets: 1, setRest: 0, exercises: [{ work: 10, rest: 6 }, { work: 10, rest: 0 }] }), c);
+  r.start();
+  const cd = r.upcomingCues(60000).filter((x) => x.kind === 'countdown');
+  const end = (ph) => cd.filter((x) => x.phase === ph).map((x) => x.sec);
+  assert.deepEqual(end('work'), [5, 3, 2, 1, 5, 3, 2, 1]);   // beide Arbeitsphasen (10 s: auch 5 s davor)
+  assert.deepEqual(end('rest'), [5, 3, 2, 1]);
+  assert.ok(cd.every((x) => x.every === false));
+});

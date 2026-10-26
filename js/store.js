@@ -19,6 +19,8 @@ export const DEFAULT_SETTINGS = {
   hiitEnd: 'dong',         // HIIT: Ende einer Übung (Pause beginnt)
   hiitFinish: 'gong',      // HIIT: Ende des Trainings
   hiitCount: 'beep',       // HIIT: Piepton im Countdown
+  judoEndCount: 'warn',    // Warnton in den letzten Sekunden vor dem Ende eines Abschnitts (Judo)
+  hiitEndCount: 'warn',    // dasselbe für HIIT
   endOrder: 'voice-bell',  // 'bell-voice' | 'voice-bell' | 'bell' | 'voice'
   countdown: true,
   countdownList: [10, 5, 3, 2, 1],
