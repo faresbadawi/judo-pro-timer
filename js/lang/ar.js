@@ -1,6 +1,8 @@
 const count = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`);
 
 export default {
+  'common.more': 'المزيد', 'common.duplicated': 'تم إنشاء نسخة', 'home.empty': 'لا يوجد شيء بعد. اضغط على علامة الزائد في الأسفل.', 'blk.name': 'اسم الكتلة',
+  'pe.moreOpts': 'إعدادات إضافية', 'he.single': 'تعديل كل تمرين على حدة',
   'app.title': 'جودو برو تايمر',
   'common.back': 'رجوع', 'common.cancel': 'إلغاء', 'common.close': 'إغلاق', 'common.delete': 'حذف',
   'common.deleteConfirm': 'سيتم حذف «{name}».', 'common.duplicate': 'تكرار', 'common.edit': 'تعديل',
@@ -11,7 +13,7 @@ export default {
   'n.rounds': ({ n }) => count(n, 'جولة واحدة', 'جولتان', 'جولات', 'جولة'),
   'n.sets': ({ n }) => count(n, 'مجموعة واحدة', 'مجموعتان', 'مجموعات', 'مجموعة'),
   'n.blocks': ({ n }) => count(n, 'كتلة واحدة', 'كتلتان', 'كتل', 'كتلة'),
-  'blk.randori': 'راندوري', 'blk.exercise': 'تمرين', 'blk.pause': 'راحة', 'blk.exercisePh': 'الاسم، مثل: تحمّل', 'blk.options': 'خيارات',
+  'blk.randori': 'راندوري', 'blk.exercise': 'تمرين', 'blk.pause': 'راحة', 'blk.exercisePh': 'الاسم، مثل: Uchi-komi', 'blk.options': 'خيارات',
   'aria.drag': 'إعادة الترتيب (اسحب أو استخدم الأسهم)',
   'pe.general': 'عام', 'pe.start': 'العدّ التنازلي في البداية', 'pe.startHint': 'صفير كل ثانية، وآخر ثلاث أعلى صوتًا',
   'pe.sequence': 'التسلسل', 'pe.defaults': 'المدة الافتراضية', 'pe.defaultsHint': 'تنطبق على الكتل الجديدة وتغيّر كل كتلة من النوع نفسه. يمكنك تعديل كل وقت في التسلسل.',

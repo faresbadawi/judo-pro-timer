@@ -1,7 +1,7 @@
 // Service Worker: legt alle App-Dateien beim ersten Besuch im Cache ab -> komplett offline nutzbar.
 // Die Liste wird von `node tools/update-sw.mjs` erzeugt (vor jedem Veröffentlichen ausführen).
 /* BEGIN GENERATED */
-const CACHE = 'judo-a123fde8cb';
+const CACHE = 'judo-19d187feaf';
 const FILES = [
   "./",
   "./audio/applause.mp3",
@@ -38,6 +38,7 @@ const FILES = [
   "./js/engine/interval.js",
   "./js/engine/program.js",
   "./js/i18n.js",
+  "./js/judo-terms.js",
   "./js/lang/ar.js",
   "./js/lang/de.js",
   "./js/lang/en.js",

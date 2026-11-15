@@ -14,7 +14,8 @@ function walk(dir, rel = '') {
     return e.isDirectory() ? walk(path.join(dir, e.name), r) : [r];
   });
 }
-const files = walk(root).sort();
+// Nur App-Dateien: fremde Dateien im Ordner (z. B. heruntergeladene Pakete) gehören nicht in den Offline-Cache
+const files = walk(root).filter((f) => !/\.(whl|zip|tar|gz)$/.test(f)).sort();
 const hash = crypto.createHash('sha1');
 for (const f of files) hash.update(f).update(fs.readFileSync(path.join(root, f)));
 const version = hash.digest('hex').slice(0, 10);

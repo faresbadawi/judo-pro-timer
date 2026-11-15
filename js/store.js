@@ -111,11 +111,10 @@ export function init() {
     state.settings.hiitEndCount = 'beep';
     state.settings.v8 = true; upgraded = true;
   }
-  // Ältere Programme (Schritte mit "Pause danach") in Blöcke umwandeln, HIIT-Übungsnamen entfernen
+  // Ältere Programme (Schritte mit "Pause danach") in Blöcke umwandeln
   let migrated = false;
   state.items = state.items.map((it) => {
     if (it.kind === 'program' && it.steps) { migrated = true; return { ...mergeProgram(it), id: it.id, kind: 'program', nameKey: it.nameKey, name: it.name }; }
-    if (it.kind === 'hiit' && it.exercises?.some((e) => 'name' in e)) { migrated = true; return { ...it, exercises: it.exercises.map(({ work, rest }) => ({ work, rest })) }; }
     return it;
   });
   if (!s.items || migrated || upgraded) save();

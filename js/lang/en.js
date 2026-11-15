@@ -1,4 +1,6 @@
 export default {
+  'common.more': 'More', 'common.duplicated': 'Copy created', 'home.empty': 'Nothing here yet. Tap the plus below.', 'blk.name': 'Block name',
+  'pe.moreOpts': 'More settings', 'he.single': 'Adjust exercises one by one',
   'app.title': 'Judo Pro Timer',
   'common.back': 'Back', 'common.cancel': 'Cancel', 'common.close': 'Close', 'common.delete': 'Delete',
   'common.deleteConfirm': '"{name}" will be deleted.', 'common.duplicate': 'Duplicate', 'common.edit': 'Edit',
@@ -9,7 +11,7 @@ export default {
   'n.rounds': ({ n }) => (n === 1 ? '1 round' : `${n} rounds`),
   'n.sets': ({ n }) => (n === 1 ? '1 set' : `${n} sets`),
   'n.blocks': ({ n }) => (n === 1 ? '1 block' : `${n} blocks`),
-  'blk.randori': 'Randori', 'blk.exercise': 'Exercise', 'blk.pause': 'Pause', 'blk.exercisePh': 'Name, e.g. Conditioning', 'blk.options': 'Options',
+  'blk.randori': 'Randori', 'blk.exercise': 'Exercise', 'blk.pause': 'Pause', 'blk.exercisePh': 'Name, e.g. Uchi-komi', 'blk.options': 'Options',
   'aria.drag': 'Reorder (drag or arrow keys)',
   'pe.general': 'General', 'pe.start': 'Countdown at the start', 'pe.startHint': 'Beeps every second, the last three louder',
   'pe.sequence': 'Sequence', 'pe.defaults': 'Default duration', 'pe.defaultsHint': 'Set the length for randori and breaks once here. It applies to all blocks of that kind in the sequence and to new ones. You can still change every block below.',

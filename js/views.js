@@ -5,18 +5,15 @@ import {
 import * as store from './store.js';
 import * as sess from './session.js';
 import * as audio from './audio.js';
-import { t, tm, LANGS } from './i18n.js';
+import { t, tm, lang, LANGS } from './i18n.js';
+import { explain, kindOf, tidyName, suggest } from './judo-terms.js';
 import { programTotals, mergeProgram, validateProgram, newBlockId } from './engine/program.js';
 import { buildPhases, totalSeconds, workSeconds, mergeIntervalConfig, validateIntervalConfig } from './engine/interval.js';
 import { formatClock, formatElapsed } from './engine/clock.js';
 
 export const go = (hash) => { location.hash = hash; };
 
-// Namensvorschläge (japanische Begriffe bleiben in jeder Sprache gleich) und schnelle Dauern
-const NAME_CHOICES = {
-  randori: ['Randori', 'Randori Tachiwaza', 'Randori Newaza', 'Open Change', 'Golden Score'],
-  exercise: ['Kumi-kata', 'Uchi-komi', 'Nage-komi', 'Belastung']
-};
+// Schnelle Dauern zum Antippen
 const QUICK_DURS = { randori: [60, 120, 180, 210, 240, 300], pause: [15, 30, 45, 60, 90, 120], work: [15, 20, 30, 40, 45, 60, 90], rest: [5, 10, 15, 20, 30, 45, 60] };
 
 /* =============== Start =============== */
@@ -30,15 +27,34 @@ function summary(item) {
   return `${t('n.exercises', { n: mergeIntervalConfig(item).exercises.length })}${item.sets > 1 ? ` · ${t('n.sets', { n: item.sets })}` : ''} · ${humanDur(totalSeconds(ph))}`;
 }
 
+// Schmale Leiste auf der Karte: ein Durchgang maßstäblich (rot = Randori, gold = Übung, grau = Pause)
+function miniBar(item) {
+  const segs = item.kind === 'program'
+    ? mergeProgram(item).blocks.map((b) => [b.kind, b.dur])
+    : mergeIntervalConfig(item).exercises.flatMap((e, i, a) => (i < a.length - 1 && e.rest > 0 ? [['randori', e.work], ['pause', e.rest]] : [['randori', e.work]]));
+  return h('span', { class: 'mini', 'aria-hidden': 'true' }, segs.slice(0, 60).map(([k, dur]) => h('i', { class: 'k-' + k, style: `flex-grow:${Math.max(1, dur)}` })));
+}
+
+// Menü einer Karte: Bearbeiten, Duplizieren, Löschen (statt vieler Knöpfe auf der Karte)
+function itemMenu(item) {
+  const act = (ic, label, fn, cls = '') => h('button', { type: 'button', class: 'menu-row ' + cls, onclick: () => { sheet.close(); fn(); } }, icon(ic), h('span', {}, label));
+  const sheet = openSheet({
+    title: store.itemName(item),
+    body: h('div', { class: 'menu' },
+      act('edit', t('common.edit'), () => go(`#/${item.kind}/${item.id}`)),
+      act('copy', t('common.duplicate'), () => { store.duplicateItem(item.id); toast(t('common.duplicated')); }),
+      act('trash', t('common.delete'), async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(item) }))) store.removeItem(item.id); }, 'danger'))
+  });
+}
+
 function itemCard(item, onDrag) {
   const grip = h('button', { type: 'button', class: 'grip', 'aria-label': t('aria.drag'), title: t('aria.drag') }, icon('grip'));
   const card = h('div', { class: 'card item blk' },
     grip,
-    h('button', { type: 'button', class: 'item-main', onclick: () => go(`#/${item.kind}/${item.id}`) },
-      h('b', {}, store.itemName(item)), h('small', {}, summary(item))),
-    iconBtn('edit', t('common.edit'), () => go(`#/${item.kind}/${item.id}`), 'sm'),
-    iconBtn('trash', t('common.delete'), async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(item) }))) store.removeItem(item.id); }, 'sm danger'),
-    h('button', { type: 'button', class: 'btn primary sm-start', 'aria-label': t('common.start'), onclick: () => launch(item) }, icon('play'), h('span', {}, t('common.start'))));
+    h('button', { type: 'button', class: 'item-main', title: t('common.edit'), onclick: () => go(`#/${item.kind}/${item.id}`) },
+      h('b', {}, store.itemName(item)), h('small', {}, summary(item)), miniBar(item)),
+    iconBtn('more', t('common.more'), () => itemMenu(item), 'sm flat'),
+    h('button', { type: 'button', class: 'play-btn', 'aria-label': `${t('common.start')}: ${store.itemName(item)}`, title: t('common.start'), onclick: () => launch(item) }, icon('play')));
   grip.addEventListener('pointerdown', (e) => onDrag(e, card));
   return card;
 }
@@ -64,8 +80,8 @@ export function homeView(tab = 'judo') {
       h('div', { class: 'bar-actions' }, iconBtn('history', t('hist.title'), () => go('#/history')), iconBtn('gear', t('set.title'), () => go('#/settings')))),
     live ? h('button', { type: 'button', class: 'live-banner', onclick: () => go('#/run') }, icon('timer'), h('span', {}, `${t('home.running')}: ${store.itemName(sess.session.item)}`), icon('next', 'flip')) : null,
     h('div', { class: 'sec-head' }, h('h2', {}, t(isHiit ? 'home.hiit' : 'home.programs')), h('p', { class: 'muted small' }, t(isHiit ? 'home.hiitSub' : 'home.programsSub'))),
-    listBox,
-    h('button', { type: 'button', class: 'btn add', onclick: () => go(isHiit ? '#/hiit/new' : '#/program/new') }, icon('plus'), t(isHiit ? 'home.newHiit' : 'home.newProgram')),
+    list.length ? listBox : h('div', { class: 'empty' }, icon(isHiit ? 'bolt' : 'belt'), h('p', {}, t('home.empty'))),
+    h('button', { type: 'button', class: 'fab', 'aria-label': t(isHiit ? 'home.newHiit' : 'home.newProgram'), title: t(isHiit ? 'home.newHiit' : 'home.newProgram'), onclick: () => go(isHiit ? '#/hiit/new' : '#/program/new') }, icon('plus')),
     h('nav', { class: 'tabbar', 'aria-label': t('app.title') },
       tabBtn('judo', 'belt', t('tab.judo'), '#/'),
       tabBtn('hiit', 'bolt', t('tab.hiit'), '#/hiit')));
@@ -75,6 +91,11 @@ export function homeView(tab = 'judo') {
 
 function topBar(title, backHash = '#/') {
   return h('header', { class: 'top-bar' }, h('button', { type: 'button', class: 'icon-btn flat', 'aria-label': t('common.back'), onclick: () => go(backHash) }, icon('back', 'flip')), h('h1', {}, title));
+}
+
+// Aufklappbarer Bereich für alles, was man selten braucht
+function moreBox(...kids) {
+  return h('details', { class: 'more' }, h('summary', {}, icon('gear'), h('span', {}, t('pe.moreOpts')), icon('down', 'chev')), kids);
 }
 
 function stickyBar(sumEl, actions) {
@@ -161,23 +182,36 @@ export function programEditor(id) {
       const pause = b.kind === 'pause';
       const grip = h('button', { type: 'button', class: 'grip', 'aria-label': t('aria.drag'), title: t('aria.drag'),
         onkeydown: (e) => { if (e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); } else if (e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); } } }, icon('grip'));
-      const card = h('div', { class: `card blk blk-${b.kind}${b.more ? '' : ''}` });
+      const card = h('div', { class: `card blk blk-${b.kind}` });
       grip.addEventListener('pointerdown', (e) => startDrag(e, card, i, list, d.blocks, () => { drawBlocks(); updateSummary(); }));
-      const nameEl = b.kind === 'exercise'
-        ? h('input', { type: 'text', class: 'name-input', value: b.name, maxlength: 30, placeholder: t('blk.exercisePh'), 'aria-label': t('blk.exercise'), oninput: (e) => { b.name = e.target.value; } })
-        : h('span', { class: 'blk-title' }, t('blk.' + b.kind) === b.name || !b.name ? t('blk.' + b.kind) : b.name);
-      const tools = [];
-      if (!pause) tools.push(iconBtn('gear', t('blk.options'), () => { b.more = !b.more; drawBlocks(); }, 'sm' + (b.more ? ' on' : '')));
-      tools.push(iconBtn('dup', t('common.duplicate'), () => { d.blocks.splice(i + 1, 0, { ...b, id: newBlockId(), more: false }); drawBlocks(); updateSummary(); }, 'sm'));
-      tools.push(iconBtn('trash', t('common.remove'), () => { d.blocks.splice(i, 1); drawBlocks(); updateSummary(); }, 'sm danger'));
+      // Der Name bestimmt alles: bekannte Judo-Begriffe werden erkannt, erklärt und färben den Block (Randori rot, Übung gold)
+      const hint = h('div', { class: 'term-hint', hidden: true });
+      const sugg = h('div', { class: 'chips sugg', hidden: true });
+      const showHint = () => {
+        const ex = explain(b.name, lang());
+        hint.hidden = !ex;
+        if (ex) fill(hint, ex.jp ? h('span', { class: 'jp', lang: 'ja' }, ex.jp) : null, h('span', {}, ex.text));
+      };
+      const setKind = () => { const k = kindOf(b.name); if (k && k !== b.kind) { b.kind = k; card.className = `card blk blk-${k}`; } };
+      const pick = (n) => { b.name = n; nameEl.value = n; setKind(); showHint(); sugg.hidden = true; nameEl.blur(); };
+      const showSugg = () => {
+        const names = suggest(b.name);
+        sugg.hidden = !names.length;
+        fill(sugg, names.map((n) => h('button', { type: 'button', class: 'chip', onpointerdown: (e) => e.preventDefault(), onclick: () => pick(n) }, n)));
+      };
+      const nameEl = pause
+        ? h('span', { class: 'blk-title' }, t('blk.pause'))
+        : h('input', { type: 'text', class: 'name-input', value: b.name, maxlength: 30, placeholder: t('blk.exercisePh'), 'aria-label': t('blk.name'), autocomplete: 'off', autocapitalize: 'words', enterkeyhint: 'done',
+          oninput: (e) => { b.name = e.target.value; setKind(); showHint(); showSugg(); },
+          onfocus: showSugg,
+          onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); },
+          onblur: () => { setTimeout(() => { sugg.hidden = true; }, 160); const tidy = tidyName(b.name); if (tidy !== b.name) { b.name = tidy; nameEl.value = tidy; showHint(); } } });
+      const tools = [
+        iconBtn('dup', t('common.duplicate'), () => { d.blocks.splice(i + 1, 0, { ...b, id: newBlockId() }); drawBlocks(); updateSummary(); }, 'sm'),
+        iconBtn('trash', t('common.remove'), () => { d.blocks.splice(i, 1); drawBlocks(); updateSummary(); }, 'sm danger')];
       const timeEl = durationField({ value: b.dur || 60, min: 1, quick: QUICK_DURS[pause ? 'pause' : 'randori'], label: t('pe.duration'), onChange: (v) => { b.dur = v; updateSummary(); } });
-      card.append(h('div', { class: 'blk-head' }, grip, nameEl), h('div', { class: 'blk-row' }, timeEl, h('div', { class: 'tools' }, tools)));
-      if (b.more && !pause) card.append(h('div', { class: 'blk-more' },
-        b.kind === 'randori' ? h('label', { class: 'field' }, h('span', {}, t('blk.nameOwn')),
-          h('input', { type: 'text', value: b.name, maxlength: 30, placeholder: t('blk.' + b.kind), oninput: (e) => { b.name = e.target.value; nameEl.tagName === 'INPUT' ? (nameEl.value = b.name) : (nameEl.textContent = b.name || t('blk.' + b.kind)); } })) : null,
-        h('small', { class: 'sub' }, t('blk.nameChoose')),
-        h('div', { class: 'chips' }, NAME_CHOICES[b.kind].map((n) =>
-          h('button', { type: 'button', class: 'chip' + (b.name === n ? ' on' : ''), onclick: () => { b.name = n; drawBlocks(); } }, n)))));
+      card.append(h('div', { class: 'blk-head' }, grip, nameEl), pause ? '' : hint, pause ? '' : sugg, h('div', { class: 'blk-row' }, timeEl, h('div', { class: 'tools' }, tools)));
+      if (!pause) showHint();
       return card;
     }));
   };
@@ -186,6 +220,7 @@ export function programEditor(id) {
     d.blocks.push({ id: newBlockId(), kind, name: kind === 'randori' ? 'Randori' : '', dur: d.defaults[kind] });
     drawBlocks(); updateSummary();
     list.lastElementChild?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (kind === 'exercise') list.lastElementChild?.querySelector('.name-input')?.focus({ preventScroll: true });
   };
 
   // Standarddauer für Randori und Pause: gilt für neue Blöcke und setzt alle vorhandenen Blöcke dieser Art um
@@ -194,7 +229,15 @@ export function programEditor(id) {
     { label: t('pe.def.randori'), hint: t('pe.def.randoriHint'), get: () => d.defaults.randori, quick: QUICK_DURS.randori, set: (v) => applyDefault('randori', v) },
     { label: t('pe.def.pause'), hint: t('pe.def.pauseHint'), get: () => d.defaults.pause, quick: QUICK_DURS.pause, set: (v) => applyDefault('pause', v) }]);
 
+  // Wiederholen steht direkt unter dem Ablauf; die Pause dazwischen erscheint erst ab zwei Durchgängen
+  const repeatBox = h('div', { class: 'card' });
+  const drawRepeat = () => fill(repeatBox,
+    row(t('pe.repeat'), counter({ value: d.repeat, min: 1, max: 99, unit: '×', quick: [1, 2, 3, 4, 5, 6, 8, 10], label: t('pe.repeat'),
+      onChange: (v) => { const was = d.repeat > 1; d.repeat = v; updateSummary(); if ((v > 1) !== was) drawRepeat(); } }), t('pe.repeatHint')),
+    d.repeat > 1 ? row(t('pe.repeatPause'), durationField({ value: d.repeatPause, min: 0, quick: [0, 15, 30, 60, 90, 120], label: t('pe.repeatPause'), onChange: (v) => { d.repeatPause = v; updateSummary(); } })) : null);
+
   const save = () => {
+    d.blocks.forEach((b) => { if (b.kind !== 'pause') b.name = tidyName(b.name) || (b.kind === 'randori' ? 'Randori' : ''); });
     const c = mergeProgram(d);
     if (validateProgram(c).length) { toast(t('err.invalid')); return null; }
     const out = { ...c, id: d.id, kind: 'program' };
@@ -206,30 +249,27 @@ export function programEditor(id) {
     return out;
   };
 
-  drawBlocks(); updateSummary();
+  drawBlocks(); drawRepeat(); updateSummary();
   return h('div', { class: 'page editor' },
     topBar(existing ? t('pe.edit') : t('pe.new')),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('pe.namePh'), oninput: (e) => { d.name = e.target.value; } })),
-    h('h3', { class: 'sec-title' }, t('pe.defaults')),
-    h('p', { class: 'muted hint' }, t('pe.defaultsHint')),
-    defaultsBox,
-    h('h3', { class: 'sec-title' }, t('pe.general')),
-    h('div', { class: 'card' },
-      row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
-      row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } })),
-      row(t('pe.repeat'), counter({ value: d.repeat, min: 1, max: 99, unit: '×', quick: [1, 2, 3, 4, 5, 6, 8, 10], label: t('pe.repeat'), onChange: (v) => { d.repeat = v; updateSummary(); } }), t('pe.repeatHint')),
-      row(t('pe.repeatPause'), durationField({ value: d.repeatPause, min: 0, quick: [0, 15, 30, 60, 90, 120], label: t('pe.repeatPause'), onChange: (v) => { d.repeatPause = v; updateSummary(); } }))),
     h('h3', { class: 'sec-title' }, t('pe.sequence')),
-    h('p', { class: 'muted hint' }, t('pe.dragHint')),
     list,
     h('div', { class: 'add-row' },
-      h('button', { type: 'button', class: 'btn add', onclick: () => add('randori') }, icon('plus'), t('blk.randori')),
-      h('button', { type: 'button', class: 'btn add', onclick: () => add('exercise') }, icon('plus'), t('blk.exercise')),
+      h('button', { type: 'button', class: 'btn add k-randori', onclick: () => add('randori') }, icon('plus'), t('blk.randori')),
+      h('button', { type: 'button', class: 'btn add k-exercise', onclick: () => add('exercise') }, icon('plus'), t('blk.exercise')),
       h('button', { type: 'button', class: 'btn add', onclick: () => add('pause') }, icon('plus'), t('blk.pause'))),
+    repeatBox,
+    moreBox(
+      h('div', { class: 'card' },
+        row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
+        row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
+      h('h3', { class: 'sec-title' }, t('pe.defaults')),
+      h('p', { class: 'muted hint' }, t('pe.defaultsHint')),
+      defaultsBox),
     existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
-      h('button', { type: 'button', class: 'btn ghost', onclick: () => go('#/') }, icon('close'), t('common.cancel')),
       h('button', { type: 'button', class: 'btn', onclick: () => { if (save()) { toast(t('common.saved')); go('#/'); } } }, icon('check'), t('common.save')),
       h('button', { type: 'button', class: 'btn primary', onclick: () => { const it = save(); if (it) launch(it); } }, icon('play'), t('common.start'))]));
 }
@@ -253,11 +293,11 @@ export function hiitEditor(id) {
       h('div', {}, h('small', {}, t('pe.work')), h('b', {}, humanDur(workSeconds(ph)))));
   };
   const newEx = () => ({ name: '', work: d.defaults.work, rest: d.defaults.rest });
-  const drawCount = () => fill(countBox, row(t('he.count'), counter({ value: d.exercises.length, min: 1, max: 99, unit: '×', label: t('he.count'), onChange: (n) => {
+  const drawCount = () => fill(countBox, row(t('he.count'), counter({ value: d.exercises.length, min: 1, max: 99, unit: '×', label: t('he.count'), quick: [4, 6, 8, 10, 12, 15, 20], onChange: (n) => {
     while (d.exercises.length < n) d.exercises.push(newEx());
     while (d.exercises.length > n) d.exercises.pop();
     drawEx(); updateSummary();
-  } }), t('he.countHint')));
+  } })));
   const swap = (i, j) => { if (j < 0 || j >= d.exercises.length) return; [d.exercises[i], d.exercises[j]] = [d.exercises[j], d.exercises[i]]; drawEx(); exBox.children[j]?.querySelector('.grip')?.focus(); };
   const drawEx = () => {
     fill(exBox, d.exercises.map((e, i) => {
@@ -279,10 +319,16 @@ export function hiitEditor(id) {
       return card;
     }));
   };
-  // Standardzeit der Übung: gilt für neue Übungen und setzt alle vorhandenen Übungen um
+  // Zeiten für alle Übungen auf einmal: gilt für neue Übungen und setzt alle vorhandenen um
   const applyDefault = (key, v) => { d.defaults[key] = v; d.exercises.forEach((e) => { e[key] = v; }); drawEx(); updateSummary(); };
-  const defaultsBox = quickCard([
-    { label: t('he.def.work'), hint: t('he.def.workHint'), get: () => d.defaults.work, quick: QUICK_DURS.work, set: (v) => applyDefault('work', v) }]);
+  // Set-Pause erscheint erst ab zwei Sets
+  const setsBox = h('div', {});
+  const drawSets = () => fill(setsBox,
+    row(t('he.sets'), counter({ value: d.sets, min: 1, max: 99, unit: '×', quick: [1, 2, 3, 4, 5, 6], label: t('he.sets'),
+      onChange: (v) => { const was = d.sets > 1; d.sets = v; updateSummary(); if ((v > 1) !== was) drawSets(); } }), t('he.setsHint')),
+    d.sets > 1 ? row(t('he.setRest'), durationField({ value: d.setRest, min: 0, quick: [30, 45, 60, 90, 120, 180], label: t('he.setRest'), onChange: (v) => { d.setRest = v; updateSummary(); } }), t('he.setRestHint')) : null);
+  // Die Einzelliste ist zugeklappt, solange alle Übungen gleich sind und keinen Namen haben
+  const custom = d.exercises.some((e, i) => e.name || e.work !== d.defaults.work || (i < d.exercises.length - 1 && e.rest !== d.defaults.rest));
 
   const save = () => {
     const c = mergeIntervalConfig(d);
@@ -295,28 +341,26 @@ export function hiitEditor(id) {
     store.saveItem(out);
     return out;
   };
-  drawEx(); drawCount(); updateSummary();
+  drawEx(); drawCount(); drawSets(); updateSummary();
   return h('div', { class: 'page editor' },
     topBar(existing ? t('he.edit') : t('he.new'), '#/hiit'),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('he.namePh'), oninput: (e) => { d.name = e.target.value; } })),
-    h('h3', { class: 'sec-title' }, t('pe.defaults')),
-    h('p', { class: 'muted hint' }, t('he.defaultsHint')),
-    defaultsBox,
     h('h3', { class: 'sec-title' }, t('he.structure')),
     h('div', { class: 'card' },
-      row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
       countBox,
-      row(t('he.restBetween'), durationField({ value: d.defaults.rest, min: 0, quick: QUICK_DURS.rest, label: t('he.restBetween'), onChange: (v) => applyDefault('rest', v) }), t('he.restBetweenHint')),
-      row(t('he.sets'), counter({ value: d.sets, min: 1, max: 99, unit: '×', quick: [1, 2, 3, 4, 5, 6], label: t('he.sets'), onChange: (v) => { d.sets = v; updateSummary(); } }), t('he.setsHint')),
-      row(t('he.setRest'), durationField({ value: d.setRest, min: 0, quick: [30, 45, 60, 90, 120, 180], label: t('he.setRest'), onChange: (v) => { d.setRest = v; updateSummary(); } }), t('he.setRestHint')),
-      row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
-    h('h3', { class: 'sec-title' }, t('he.exercises')),
-    h('p', { class: 'muted hint' }, t('he.listHint')),
-    exBox,
+      row(t('he.def.work'), durationField({ value: d.defaults.work, min: 1, quick: QUICK_DURS.work, label: t('he.def.work'), onChange: (v) => applyDefault('work', v) }), t('he.def.workHint')),
+      row(t('he.restBetween'), durationField({ value: d.defaults.rest, min: 0, quick: QUICK_DURS.rest, label: t('he.restBetween'), onChange: (v) => applyDefault('rest', v) })),
+      setsBox),
+    h('details', { class: 'more', ...(custom ? { open: true } : {}) }, h('summary', {}, icon('edit'), h('span', {}, t('he.single')), icon('down', 'chev')),
+      h('p', { class: 'muted hint' }, t('he.listHint')),
+      exBox),
+    moreBox(
+      h('div', { class: 'card' },
+        row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
+        row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } })))),
     existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/hiit'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
-      h('button', { type: 'button', class: 'btn ghost', onclick: () => go('#/hiit') }, icon('close'), t('common.cancel')),
       h('button', { type: 'button', class: 'btn', onclick: () => { if (save()) { toast(t('common.saved')); go('#/hiit'); } } }, icon('check'), t('common.save')),
       h('button', { type: 'button', class: 'btn primary', onclick: () => { const it = save(); if (it) launch(it); } }, icon('play'), t('common.start'))]));
 }
@@ -332,7 +376,7 @@ export function runView() {
   if (!r) { go('#/'); return h('div'); }
   const el = {
     root: h('div', { class: 'run' }),
-    phase: h('div', { class: 'run-phase' }), label: h('div', { class: 'run-label' }), clock: h('div', { class: 'run-clock', role: 'timer' }),
+    phase: h('div', { class: 'run-phase' }), label: h('div', { class: 'run-label' }), sub: h('div', { class: 'run-sub' }), clock: h('div', { class: 'run-clock', role: 'timer' }),
     meta: h('div', { class: 'run-meta' }), bar: h('i'), next: h('div', { class: 'run-next' }),
     dots: h('div', { class: 'run-dots', 'aria-hidden': 'true' }),
     ring: (() => {
@@ -387,6 +431,11 @@ export function runView() {
     el.phase.textContent = s.state === 'finished' ? t('run.finished') : s.state === 'ready' ? t('run.ready') : s.state === 'paused' ? `${t('run.paused')} · ${t('phase.' + ph.type)}` : t('phase.' + ph.type);
     const lbl = ph.type === 'work' ? ph.label : (ph.label ? `${t('run.upNext')}: ${ph.label}` : '');
     el.label.textContent = s.state === 'finished' ? store.itemName(sess.session.item) : lbl;
+    // Bekannte Judo-Begriffe: japanische Zeichen und kurze Erklärung unter dem Namen
+    const ex = s.state !== 'finished' && ph.type === 'work' ? explain(ph.label, lang()) : null;
+    const subKey = ex ? `${ex.jp}|${ex.text}` : '';
+    if (el.sub.dataset.k !== subKey) { el.sub.dataset.k = subKey; fill(el.sub, ex && ex.jp ? h('span', { class: 'jp', lang: 'ja' }, ex.jp) : null, ex ? h('span', {}, ex.text) : null); }
+    el.sub.hidden = !ex;
     el.clock.textContent = s.state === 'finished' ? '00:00' : formatClock(s.phaseRemainingMs);
     el.clock.classList.toggle('long', el.clock.textContent.length > 5);
     const frac = s.state === 'finished' ? 1 : Math.min(1, s.phaseElapsedMs / Math.max(1, s.phaseMs));
@@ -425,7 +474,7 @@ export function runView() {
       h('div', { class: 'run-title' }, store.itemName(sess.session.item)),
       h('div', { class: 'run-top-r' }, iconBtn('replay', t('run.restartPhase'), () => sess.restartPhase(), 'flat'), iconBtn('expand', t('run.fullscreen'), fs, 'flat'), iconBtn('down', t('run.minimize'), () => go(backHash()), 'flat'))),
     h('div', { class: 'run-bar' }, el.bar),
-    h('div', { class: 'run-main', onclick: () => sess.toggle() }, el.phase, el.label, h('div', { class: 'ring' }, el.ring.svg, el.clock), el.meta, el.dots, el.next),
+    h('div', { class: 'run-main', onclick: () => sess.toggle() }, el.phase, el.label, el.sub, h('div', { class: 'ring' }, el.ring.svg, el.clock), el.meta, el.dots, el.next),
     h('div', { class: 'run-side' },
       h('div', { class: 'stats' },
         h('div', {}, h('small', {}, t('run.remaining')), el.tTotal),
