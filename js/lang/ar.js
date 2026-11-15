@@ -3,6 +3,7 @@ const count = (n, one, two, few, many) => (n === 1 ? one : n === 2 ? two : n <= 
 export default {
   'common.more': 'المزيد', 'common.duplicated': 'تم إنشاء نسخة', 'home.empty': 'لا يوجد شيء بعد. اضغط على علامة الزائد في الأسفل.', 'blk.name': 'اسم الكتلة',
   'pe.moreOpts': 'إعدادات إضافية', 'he.single': 'تعديل كل تمرين على حدة',
+  'set.sayNames': 'نطق اسم التمرين', 'set.sayNamesHint': 'يُنطق الاسم قبل هاجيمي: Uchi-komi، Belastung',
   'app.title': 'جودو برو تايمر',
   'common.back': 'رجوع', 'common.cancel': 'إلغاء', 'common.close': 'إغلاق', 'common.delete': 'حذف',
   'common.deleteConfirm': 'سيتم حذف «{name}».', 'common.duplicate': 'تكرار', 'common.edit': 'تعديل',

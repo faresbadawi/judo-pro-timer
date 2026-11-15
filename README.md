@@ -53,7 +53,8 @@ Alle Pfade sind relativ. Repository auf GitHub anlegen, Code hochladen, unter *S
 | `js/engine/interval.js` | HIIT-Phasen und der Läufer (Pause, Weiter, Zurück, Anpassen, Ton-Plan) |
 | `js/audio.js`, `js/session.js` | Töne und Ablauf (Timer-Schleife, Wake Lock, Verlauf) |
 | `js/views.js`, `js/ui.js`, `css/style.css` | Oberflächen und Design |
-| `js/judo-terms.js` | Judo-Wörterbuch: erkennt getippte Begriffe (Uchi-komi, Randori …), zeigt japanische Zeichen und Erklärung |
+| `js/judo-terms.js` | Judo-Wörterbuch: erkennt getippte Begriffe (Uchi-komi, Randori …), schlägt sie vor und kennt ihre Ansage |
+| `audio/voice/names/` | gesprochene Namen von Übungen (Uchi-komi, Belastung), werden vor dem Hajime angesagt |
 | `js/lang/*.js`, `js/i18n.js` | Übersetzungen (de, en, ar) |
 | `js/store.js` | Speicherung (localStorage) |
 | `audio/voice/<jp,de,en,ar>/` | Sprachclips |
@@ -63,6 +64,7 @@ Alle Pfade sind relativ. Repository auf GitHub anlegen, Code hochladen, unter *S
 
 - **Deutsch / Englisch:** mit dem Programm Piper erzeugt, Stimmen „Thorsten“ und „Joe“ (beide CC0).
 - **Japanisch / Arabisch:** mit ElevenLabs erzeugt (Modell `eleven_v4`; japanisch „AI NOBORu“, arabisch „Rawi – Calm & Clear Fusha Narrator“). Die kostenlose Stufe verlangt die Nennung der Quelle (steht in den Optionen) und gilt nicht für kommerzielle Nutzung.
+- **Namen der Übungen** (`audio/voice/names/`): „Uchi-komi“ und „Belastung“, mit ElevenLabs erzeugt (`eleven_v4`, Stimme „AI NOBORu“). Weitere Namen: Datei dort ablegen und in `js/judo-terms.js` beim Begriff `clip: '<dateiname>'` eintragen.
 - Neue Clips: Dateien `start`, `stop`, `rest`, `ready`, `switch`, `finish` (mp3) in `audio/voice/<ordner>/` ablegen, dann `node tools/update-sw.mjs`.
 
 ## Später als native App

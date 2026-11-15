@@ -3,6 +3,7 @@
 // wenn die Seite im Hintergrund gedrosselt wird oder der Bildschirm dunkel ist (soweit das System Audio erlaubt).
 import { settings } from './store.js';
 import { lang } from './i18n.js';
+import { CLIPS, clipOf } from './judo-terms.js';
 
 let ctx = null;
 let master = null;
@@ -229,12 +230,20 @@ export async function prepare() {
   await loadApplause();
   const dir = voiceDir();
   if (!dir || !ctx) return;
-  await Promise.all(KEYS.map((k) => fetchClip(dir, k)));
+  await Promise.all([...KEYS.map((k) => fetchClip(dir, k)), ...CLIPS.map((k) => fetchClip('names', k))]);
 }
 function voice(t, key, force = false) {
   const dir = voiceDir(force);
   if (!dir) return 0;
-  const buf = decoded.get(`${dir}/${key}`) || (key === 'switch' ? decoded.get(`${dir}/start`) : null);
+  return speak(t, decoded.get(`${dir}/${key}`) || (key === 'switch' ? decoded.get(`${dir}/start`) : null));
+}
+// Name der Übung ansagen (z. B. "Uchi-komi", "Belastung"), wenn es dazu einen Clip gibt. Liefert die Dauer in Sekunden.
+function voiceName(t, label) {
+  if (!voiceDir() || !settings().sayNames) return 0;
+  const clip = clipOf(label);
+  return clip ? speak(t, decoded.get(`names/${clip}`)) : 0;
+}
+function speak(t, buf) {
   if (!buf) return 0;
   const g = ctx.createGain(); g.gain.value = 1.3; // Ansagen deutlich vor Glocke und Piepton
   const src = ctx.createBufferSource(); src.buffer = buf;
@@ -247,7 +256,7 @@ function voice(t, key, force = false) {
 /* ---------- Ereignisse -> Töne ---------- */
 
 // Töne für einen Phasenwechsel. from/to = Phasentypen (start, warmup, work, rest, extra, setrest, cooldown, finish)
-function playTransition(t, from, to, finalWork = false) {
+function playTransition(t, from, to, finalWork = false, label = '') {
   const S = settings();
   const isEnd = to === 'finish';
   if (mode === 'hiit') { // Allgemeiner Timer: nur Töne, keine Ansagen
@@ -277,7 +286,10 @@ function playTransition(t, from, to, finalWork = false) {
   if (to === 'work') {
     // Beginn einer Belastung: Kommando (Hajime) mit leisem Startton darunter.
     // Folgt direkt auf eine andere Belastung (ohne Pause), kommt erst das Mate der vorigen.
-    const at = from === 'work' ? t + endSound(t) + 0.3 : t;
+    // Hat die Übung eine eigene Ansage (Uchi-komi, Belastung), kommt zuerst ihr Name, dann das Hajime.
+    let at = from === 'work' ? t + endSound(t) + 0.3 : t;
+    const said = voiceName(at, label);
+    if (said) at += said + 0.15;
     voice(at, 'start');
     play(S.judoStart, at, 0.55);
     return;
@@ -323,7 +335,7 @@ export function schedule(cues) {
         play(snd, t, c.sec <= 3 ? 1.4 : 0.8, c.sec);
       }
     } else if (c.kind === 'phase') {
-      playTransition(t, c.from, c.phaseType, c.finalWork);
+      playTransition(t, c.from, c.phaseType, c.finalWork, c.label);
     } else if (c.kind === 'finish') {
       playTransition(t, 'work', 'finish');
     }
@@ -331,10 +343,10 @@ export function schedule(cues) {
 }
 
 // Sofort (Bedienung): z. B. Start oder Weiterschalten per Tipp
-export function playNow(from, to, delay = 0.02, finalWork = false) {
+export function playNow(from, to, delay = 0.02, finalWork = false, label = '') {
   if (!enabled()) return;
   unlock();
-  playTransition(ctx.currentTime + delay, from, to, finalWork);
+  playTransition(ctx.currentTime + delay, from, to, finalWork, label);
 }
 
 export function previewSound(id, v = 1) {

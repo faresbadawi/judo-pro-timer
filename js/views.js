@@ -5,8 +5,8 @@ import {
 import * as store from './store.js';
 import * as sess from './session.js';
 import * as audio from './audio.js';
-import { t, tm, lang, LANGS } from './i18n.js';
-import { explain, kindOf, tidyName, suggest } from './judo-terms.js';
+import { t, tm, LANGS } from './i18n.js';
+import { kindOf, tidyName, suggest } from './judo-terms.js';
 import { programTotals, mergeProgram, validateProgram, newBlockId } from './engine/program.js';
 import { buildPhases, totalSeconds, workSeconds, mergeIntervalConfig, validateIntervalConfig } from './engine/interval.js';
 import { formatClock, formatElapsed } from './engine/clock.js';
@@ -89,13 +89,15 @@ export function homeView(tab = 'judo') {
 
 /* =============== Editor: Judo-Programm =============== */
 
-function topBar(title, backHash = '#/') {
-  return h('header', { class: 'top-bar' }, h('button', { type: 'button', class: 'icon-btn flat', 'aria-label': t('common.back'), onclick: () => go(backHash) }, icon('back', 'flip')), h('h1', {}, title));
+function topBar(title, backHash = '#/', action = null) {
+  return h('header', { class: 'top-bar' }, h('button', { type: 'button', class: 'icon-btn flat', 'aria-label': t('common.back'), onclick: () => go(backHash) }, icon('back', 'flip')), h('h1', {}, title), action);
 }
 
-// Aufklappbarer Bereich für alles, was man selten braucht
-function moreBox(...kids) {
-  return h('details', { class: 'more' }, h('summary', {}, icon('gear'), h('span', {}, t('pe.moreOpts')), icon('down', 'chev')), kids);
+// Zahnrad oben in der Ecke des Editors: öffnet die selten gebrauchten Einstellungen in einem Fenster
+function settingsBtn(build) {
+  return iconBtn('gear', t('pe.moreOpts'), () => {
+    const sheet = openSheet({ title: t('pe.moreOpts'), body: build(), foot: [h('button', { class: 'btn primary', type: 'button', onclick: () => sheet.close() }, icon('check'), t('common.ok'))] });
+  });
 }
 
 function stickyBar(sumEl, actions) {
@@ -184,16 +186,10 @@ export function programEditor(id) {
         onkeydown: (e) => { if (e.key === 'ArrowUp') { e.preventDefault(); move(i, -1); } else if (e.key === 'ArrowDown') { e.preventDefault(); move(i, 1); } } }, icon('grip'));
       const card = h('div', { class: `card blk blk-${b.kind}` });
       grip.addEventListener('pointerdown', (e) => startDrag(e, card, i, list, d.blocks, () => { drawBlocks(); updateSummary(); }));
-      // Der Name bestimmt alles: bekannte Judo-Begriffe werden erkannt, erklärt und färben den Block (Randori rot, Übung gold)
-      const hint = h('div', { class: 'term-hint', hidden: true });
+      // Bekannte Judo-Begriffe werden beim Tippen vorgeschlagen und färben den Block (Randori rot, Übung gold)
       const sugg = h('div', { class: 'chips sugg', hidden: true });
-      const showHint = () => {
-        const ex = explain(b.name, lang());
-        hint.hidden = !ex;
-        if (ex) fill(hint, ex.jp ? h('span', { class: 'jp', lang: 'ja' }, ex.jp) : null, h('span', {}, ex.text));
-      };
       const setKind = () => { const k = kindOf(b.name); if (k && k !== b.kind) { b.kind = k; card.className = `card blk blk-${k}`; } };
-      const pick = (n) => { b.name = n; nameEl.value = n; setKind(); showHint(); sugg.hidden = true; nameEl.blur(); };
+      const pick = (n) => { b.name = n; nameEl.value = n; setKind(); sugg.hidden = true; nameEl.blur(); };
       const showSugg = () => {
         const names = suggest(b.name);
         sugg.hidden = !names.length;
@@ -202,16 +198,15 @@ export function programEditor(id) {
       const nameEl = pause
         ? h('span', { class: 'blk-title' }, t('blk.pause'))
         : h('input', { type: 'text', class: 'name-input', value: b.name, maxlength: 30, placeholder: t('blk.exercisePh'), 'aria-label': t('blk.name'), autocomplete: 'off', autocapitalize: 'words', enterkeyhint: 'done',
-          oninput: (e) => { b.name = e.target.value; setKind(); showHint(); showSugg(); },
+          oninput: (e) => { b.name = e.target.value; setKind(); showSugg(); },
           onfocus: showSugg,
           onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); },
-          onblur: () => { setTimeout(() => { sugg.hidden = true; }, 160); const tidy = tidyName(b.name); if (tidy !== b.name) { b.name = tidy; nameEl.value = tidy; showHint(); } } });
+          onblur: () => { setTimeout(() => { sugg.hidden = true; }, 160); const tidy = tidyName(b.name); if (tidy !== b.name) { b.name = tidy; nameEl.value = tidy; } } });
       const tools = [
         iconBtn('dup', t('common.duplicate'), () => { d.blocks.splice(i + 1, 0, { ...b, id: newBlockId() }); drawBlocks(); updateSummary(); }, 'sm'),
         iconBtn('trash', t('common.remove'), () => { d.blocks.splice(i, 1); drawBlocks(); updateSummary(); }, 'sm danger')];
       const timeEl = durationField({ value: b.dur || 60, min: 1, quick: QUICK_DURS[pause ? 'pause' : 'randori'], label: t('pe.duration'), onChange: (v) => { b.dur = v; updateSummary(); } });
-      card.append(h('div', { class: 'blk-head' }, grip, nameEl), pause ? '' : hint, pause ? '' : sugg, h('div', { class: 'blk-row' }, timeEl, h('div', { class: 'tools' }, tools)));
-      if (!pause) showHint();
+      card.append(h('div', { class: 'blk-head' }, grip, nameEl), pause ? '' : sugg, h('div', { class: 'blk-row' }, timeEl, h('div', { class: 'tools' }, tools)));
       return card;
     }));
   };
@@ -225,9 +220,15 @@ export function programEditor(id) {
 
   // Standarddauer für Randori und Pause: gilt für neue Blöcke und setzt alle vorhandenen Blöcke dieser Art um
   const applyDefault = (kind, v) => { d.defaults[kind] = v; d.blocks.forEach((b) => { if (b.kind === kind) b.dur = v; }); drawBlocks(); updateSummary(); };
-  const defaultsBox = quickCard([
-    { label: t('pe.def.randori'), hint: t('pe.def.randoriHint'), get: () => d.defaults.randori, quick: QUICK_DURS.randori, set: (v) => applyDefault('randori', v) },
-    { label: t('pe.def.pause'), hint: t('pe.def.pauseHint'), get: () => d.defaults.pause, quick: QUICK_DURS.pause, set: (v) => applyDefault('pause', v) }]);
+  const moreSettings = () => [
+    h('div', { class: 'card' },
+      row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
+      row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
+    h('h3', { class: 'sec-title' }, t('pe.defaults')),
+    h('p', { class: 'muted hint' }, t('pe.defaultsHint')),
+    quickCard([
+      { label: t('pe.def.randori'), hint: t('pe.def.randoriHint'), get: () => d.defaults.randori, quick: QUICK_DURS.randori, set: (v) => applyDefault('randori', v) },
+      { label: t('pe.def.pause'), hint: t('pe.def.pauseHint'), get: () => d.defaults.pause, quick: QUICK_DURS.pause, set: (v) => applyDefault('pause', v) }])];
 
   // Wiederholen steht direkt unter dem Ablauf; die Pause dazwischen erscheint erst ab zwei Durchgängen
   const repeatBox = h('div', { class: 'card' });
@@ -251,7 +252,7 @@ export function programEditor(id) {
 
   drawBlocks(); drawRepeat(); updateSummary();
   return h('div', { class: 'page editor' },
-    topBar(existing ? t('pe.edit') : t('pe.new')),
+    topBar(existing ? t('pe.edit') : t('pe.new'), '#/', settingsBtn(moreSettings)),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('pe.namePh'), oninput: (e) => { d.name = e.target.value; } })),
     h('h3', { class: 'sec-title' }, t('pe.sequence')),
     list,
@@ -260,13 +261,6 @@ export function programEditor(id) {
       h('button', { type: 'button', class: 'btn add k-exercise', onclick: () => add('exercise') }, icon('plus'), t('blk.exercise')),
       h('button', { type: 'button', class: 'btn add', onclick: () => add('pause') }, icon('plus'), t('blk.pause'))),
     repeatBox,
-    moreBox(
-      h('div', { class: 'card' },
-        row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
-        row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } }))),
-      h('h3', { class: 'sec-title' }, t('pe.defaults')),
-      h('p', { class: 'muted hint' }, t('pe.defaultsHint')),
-      defaultsBox),
     existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
@@ -330,6 +324,10 @@ export function hiitEditor(id) {
   // Die Einzelliste ist zugeklappt, solange alle Übungen gleich sind und keinen Namen haben
   const custom = d.exercises.some((e, i) => e.name || e.work !== d.defaults.work || (i < d.exercises.length - 1 && e.rest !== d.defaults.rest));
 
+  const moreSettings = () => h('div', { class: 'card' },
+    row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
+    row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } })));
+
   const save = () => {
     const c = mergeIntervalConfig(d);
     if (validateIntervalConfig(c).length) { toast(t('err.invalid')); return null; }
@@ -343,7 +341,7 @@ export function hiitEditor(id) {
   };
   drawEx(); drawCount(); drawSets(); updateSummary();
   return h('div', { class: 'page editor' },
-    topBar(existing ? t('he.edit') : t('he.new'), '#/hiit'),
+    topBar(existing ? t('he.edit') : t('he.new'), '#/hiit', settingsBtn(moreSettings)),
     h('label', { class: 'field' }, h('span', {}, t('pe.name')), h('input', { type: 'text', value: d.name, maxlength: 40, placeholder: t('he.namePh'), oninput: (e) => { d.name = e.target.value; } })),
     h('h3', { class: 'sec-title' }, t('he.structure')),
     h('div', { class: 'card' },
@@ -354,10 +352,6 @@ export function hiitEditor(id) {
     h('details', { class: 'more', ...(custom ? { open: true } : {}) }, h('summary', {}, icon('edit'), h('span', {}, t('he.single')), icon('down', 'chev')),
       h('p', { class: 'muted hint' }, t('he.listHint')),
       exBox),
-    moreBox(
-      h('div', { class: 'card' },
-        row(t('pe.start'), durationField({ value: d.start, min: 0, fixedStep: 1, quick: [3, 5, 10, 15, 20, 30], label: t('pe.start'), onChange: (v) => { d.start = v; updateSummary(); } }), t('pe.startHint')),
-        row(t('pe.cooldown'), durationField({ value: d.cooldown, min: 0, quick: [30, 60, 120, 180, 300], label: t('pe.cooldown'), onChange: (v) => { d.cooldown = v; updateSummary(); } })))),
     existing ? h('button', { type: 'button', class: 'btn danger ghost', onclick: async () => { if (await confirmDialog(t('common.deleteConfirm', { name: store.itemName(existing) }))) { store.removeItem(existing.id); go('#/hiit'); } } }, icon('trash'), t('common.delete')) : null,
     h('div', { class: 'spacer' }),
     stickyBar(sumEl, [
@@ -376,7 +370,7 @@ export function runView() {
   if (!r) { go('#/'); return h('div'); }
   const el = {
     root: h('div', { class: 'run' }),
-    phase: h('div', { class: 'run-phase' }), label: h('div', { class: 'run-label' }), sub: h('div', { class: 'run-sub' }), clock: h('div', { class: 'run-clock', role: 'timer' }),
+    phase: h('div', { class: 'run-phase' }), label: h('div', { class: 'run-label' }), clock: h('div', { class: 'run-clock', role: 'timer' }),
     meta: h('div', { class: 'run-meta' }), bar: h('i'), next: h('div', { class: 'run-next' }),
     dots: h('div', { class: 'run-dots', 'aria-hidden': 'true' }),
     ring: (() => {
@@ -431,11 +425,6 @@ export function runView() {
     el.phase.textContent = s.state === 'finished' ? t('run.finished') : s.state === 'ready' ? t('run.ready') : s.state === 'paused' ? `${t('run.paused')} · ${t('phase.' + ph.type)}` : t('phase.' + ph.type);
     const lbl = ph.type === 'work' ? ph.label : (ph.label ? `${t('run.upNext')}: ${ph.label}` : '');
     el.label.textContent = s.state === 'finished' ? store.itemName(sess.session.item) : lbl;
-    // Bekannte Judo-Begriffe: japanische Zeichen und kurze Erklärung unter dem Namen
-    const ex = s.state !== 'finished' && ph.type === 'work' ? explain(ph.label, lang()) : null;
-    const subKey = ex ? `${ex.jp}|${ex.text}` : '';
-    if (el.sub.dataset.k !== subKey) { el.sub.dataset.k = subKey; fill(el.sub, ex && ex.jp ? h('span', { class: 'jp', lang: 'ja' }, ex.jp) : null, ex ? h('span', {}, ex.text) : null); }
-    el.sub.hidden = !ex;
     el.clock.textContent = s.state === 'finished' ? '00:00' : formatClock(s.phaseRemainingMs);
     el.clock.classList.toggle('long', el.clock.textContent.length > 5);
     const frac = s.state === 'finished' ? 1 : Math.min(1, s.phaseElapsedMs / Math.max(1, s.phaseMs));
@@ -474,7 +463,7 @@ export function runView() {
       h('div', { class: 'run-title' }, store.itemName(sess.session.item)),
       h('div', { class: 'run-top-r' }, iconBtn('replay', t('run.restartPhase'), () => sess.restartPhase(), 'flat'), iconBtn('expand', t('run.fullscreen'), fs, 'flat'), iconBtn('down', t('run.minimize'), () => go(backHash()), 'flat'))),
     h('div', { class: 'run-bar' }, el.bar),
-    h('div', { class: 'run-main', onclick: () => sess.toggle() }, el.phase, el.label, el.sub, h('div', { class: 'ring' }, el.ring.svg, el.clock), el.meta, el.dots, el.next),
+    h('div', { class: 'run-main', onclick: () => sess.toggle() }, el.phase, el.label, h('div', { class: 'ring' }, el.ring.svg, el.clock), el.meta, el.dots, el.next),
     h('div', { class: 'run-side' },
       h('div', { class: 'stats' },
         h('div', {}, h('small', {}, t('run.remaining')), el.tTotal),
@@ -544,6 +533,7 @@ export function settingsView() {
     h('p', { class: 'muted hint' }, t('set.judoSoundsHint')),
     h('div', { class: 'card' },
       row(t('set.voice'), sel(S.voiceStyle, [['jp', t('set.voiceJp')], ['app', t('set.voiceApp')], ['off', t('set.voiceOff')]], (v) => { set({ voiceStyle: v }); audio.previewVoice(); }, t('set.voice')), t('set.voiceHint')),
+      row(t('set.sayNames'), toggle(S.sayNames, (v) => set({ sayNames: v }), t('set.sayNames')), t('set.sayNamesHint')),
       soundRow(t('set.judoStart'), 'judoStart', audio.SOUND_IDS, t('set.judoStartHint')),
       soundRow(t('set.judoEnd'), 'bell', audio.SOUND_IDS, t('set.judoEndHint')),
       row(t('set.endOrder'), sel(S.endOrder, [['voice-bell', t('set.orderVoiceBell')], ['bell-voice', t('set.orderBellVoice')], ['bell', t('set.orderBell')], ['voice', t('set.orderVoice')]], (v) => set({ endOrder: v }), t('set.endOrder')), t('set.endOrderHint')),

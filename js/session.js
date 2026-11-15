@@ -64,7 +64,7 @@ export async function start(item) {
   session.completed = false;
   session.runner = new IntervalRunner(phases, () => performance.now(), () => Date.now(), store.settings().countdownList);
   session.runner.start();
-  audio.playNow('none', session.runner.phase.type);
+  audio.playNow('none', session.runner.phase.type, 0.02, false, session.runner.phase.label);
   reschedule();
   timer = setInterval(tick, 100);
   requestWakeLock();
@@ -120,7 +120,7 @@ function afterJump(prevType, events, finalWork = false) {
   const e = events.find((x) => x.type === 'phaseStart');
   const fin = events.find((x) => x.type === 'finished');
   if (fin) { audio.playNow(prevType, 'finish', 0.02, finalWork); finish(); return; }
-  if (e) { audio.cancelScheduled(); audio.playNow(prevType, e.phase.type, 0.02, finalWork); }
+  if (e) { audio.cancelScheduled(); audio.playNow(prevType, e.phase.type, 0.02, finalWork, e.phase.label); }
   reschedule(); emit('phase', e); emit('tick');
 }
 export function skip() {
@@ -136,7 +136,7 @@ export function previous() {
 export function restartPhase() {
   const r = session.runner; if (!r || r.state === 'finished') return;
   audio.cancelScheduled(); r.restartPhase();
-  if (r.state === 'running') audio.playNow('none', r.phase.type);
+  if (r.state === 'running') audio.playNow('none', r.phase.type, 0.02, false, r.phase.label);
   reschedule(); emit('tick');
 }
 export function adjust(deltaSec) { const r = session.runner; if (!r) return; r.adjustCurrent(deltaSec); reschedule(); emit('tick'); }
@@ -144,7 +144,7 @@ export function addRest(sec) { const r = session.runner; if (!r) return; r.inser
 export function restart() {
   const r = session.runner; if (!r) return;
   audio.cancelScheduled(); r.restart(); session.completed = false;
-  r.start(); audio.playNow('none', r.phase.type); reschedule();
+  r.start(); audio.playNow('none', r.phase.type, 0.02, false, r.phase.label); reschedule();
   if (!timer) timer = setInterval(tick, 100);
   requestWakeLock(); emit('start');
 }

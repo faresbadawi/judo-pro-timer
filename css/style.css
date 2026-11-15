@@ -446,10 +446,8 @@ dialog.keypad .sheet-body { padding-bottom: 8px; }
 .menu-row:active { background: var(--panel-2); }
 .menu-row.danger { color: var(--danger); }
 
-/* Editor: erkannter Judo-Begriff, Vorschläge, aufklappbare Bereiche */
+/* Editor: Vorschläge beim Tippen, aufklappbare Liste, Zahnrad oben in der Ecke */
 .blk .name-input { font-weight: 700; }
-.term-hint { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: -4px 2px 10px; font-size: .85rem; color: var(--muted); }
-.jp { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", "Noto Sans CJK JP", sans-serif; font-weight: 700; color: var(--text); letter-spacing: .04em; }
 .sugg { padding: 0 0 10px; margin-top: -2px; }
 .sugg .chip { padding: 7px 12px; font-size: .85rem; }
 .add-row .btn.add { margin-bottom: 14px; padding: 14px 6px; }
@@ -467,10 +465,8 @@ details.more[open] > summary { margin-bottom: 12px; }
 details.more[open] > summary .chev { transform: rotate(180deg); }
 details.more > .hint { margin: 0 4px 10px; }
 
-/* Lauf-Bildschirm: japanische Zeichen und Erklärung unter dem Namen */
-.run-sub { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 2px 12px; color: var(--muted); font-weight: 600; font-size: clamp(.9rem, 3vmin, 1.3rem); padding: 0 10px; }
-.run-sub .jp { font-size: 1.15em; }
-@media (orientation: landscape) and (max-height: 480px) { .run-sub { display: none; } }
 .sticky-bar .btn { min-width: 0; }
 .run { padding-top: calc(20px + var(--safe-t)); }
 @media (orientation: landscape) and (max-height: 480px) { .run { padding-top: calc(8px + var(--safe-t)); } }
+.top-bar h1 { flex: 1; min-width: 0; }
+dialog.sheet .sec-title { margin-top: 14px; }

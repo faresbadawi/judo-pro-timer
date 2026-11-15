@@ -1,6 +1,7 @@
 export default {
   'common.more': 'More', 'common.duplicated': 'Copy created', 'home.empty': 'Nothing here yet. Tap the plus below.', 'blk.name': 'Block name',
   'pe.moreOpts': 'More settings', 'he.single': 'Adjust exercises one by one',
+  'set.sayNames': 'Announce exercise', 'set.sayNamesHint': 'Says the name before Hajime: Uchi-komi, Belastung',
   'app.title': 'Judo Pro Timer',
   'common.back': 'Back', 'common.cancel': 'Cancel', 'common.close': 'Close', 'common.delete': 'Delete',
   'common.deleteConfirm': '"{name}" will be deleted.', 'common.duplicate': 'Duplicate', 'common.edit': 'Edit',

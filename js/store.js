@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS = {
   endOrder: 'voice-bell',  // 'bell-voice' | 'voice-bell' | 'bell' | 'voice'
   countdown: true,
   countdownList: [3, 2, 1],   // Piepen nur in den letzten drei Sekunden
+  sayNames: true,          // Namen der Übung ansagen (Uchi-komi, Belastung), wenn es eine Aufnahme gibt
   applause: true,          // Applaus am Ende des Trainings
   vibrate: true,
   keepAwake: true,
